@@ -2,18 +2,17 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AWS SAA-C03 모의고사</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
 <div id="app">
 
-  <!-- 시작 화면 -->
   <section id="start-screen" class="card">
     <h1>AWS SAA-C03 모의고사</h1>
-    <p class="sub">실전 난이도의 연습문제 (랜덤 출제)</p>
+    <p class="sub">실전 난이도 연습문제 (랜덤 출제)</p>
 
     <div class="count-select">
       <button data-count="30">30문제</button>
@@ -21,34 +20,49 @@
       <button data-count="75">75문제</button>
     </div>
 
-    <button id="startBtn" class="primary">시험 시작하기 →</button>
+    <div class="action-buttons">
+      <button id="startBtn" class="primary">시험 시작하기 →</button>
+      <button id="historyBtn" class="secondary">📂 오답노트 보관함</button>
+    </div>
   </section>
 
-  <!-- 시험 화면 -->
   <section id="exam-screen" class="hidden card">
-    <div id="progress"></div>
-    <h2 id="question-title"></h2>
+    <div class="exam-header">
+      <span id="progress">1 / 60</span>
+      <button id="quitBtn" class="btn-quit">중도 제출</button>
+    </div>
+
+    <h2 id="question-title">문제 제목이 여기에 표시됩니다.</h2>
     <ul id="options"></ul>
 
     <div class="nav">
       <button id="prevBtn">이전</button>
       <button id="nextBtn">다음</button>
-      <button id="submitBtn" class="danger hidden">제출</button>
     </div>
   </section>
 
-  <!-- 결과 화면 -->
   <section id="result-screen" class="hidden card">
     <h2>시험 결과</h2>
-    <p id="score"></p>
+    <p id="score" class="score-text"></p>
 
-    <h3>📊 카테고리별 정답률</h3>
-    <ul id="category-stats"></ul>
-
-    <h3>❌ 오답 노트</h3>
+    <div id="category-stats"></div>
+    
+    <h3>❌ 이번 시험 오답</h3>
     <div id="wrong-list"></div>
 
-    <button onclick="location.reload()">다시 풀기</button>
+    <button id="restartBtn" class="primary">메인으로 돌아가기</button>
+  </section>
+
+  <section id="history-screen" class="hidden card">
+    <h2>📂 내 오답노트 보관함</h2>
+    <p class="sub">지금까지 틀린 문제가 자동으로 누적 저장됩니다.</p>
+    
+    <div id="history-list"></div>
+    
+    <div class="nav">
+      <button id="backToStartBtn" class="primary">메인으로 돌아가기</button>
+      <button id="clearHistoryBtn" class="danger">기록 전체 삭제</button>
+    </div>
   </section>
 
 </div>
