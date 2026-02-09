@@ -1,89 +1,63 @@
+/* 기본 폰트 및 배경 */
 body {
-  font-family: Pretendard, system-ui, sans-serif;
-  background: #f4f6fb;
-  margin: 0;
+    font-family: 'Pretendard', sans-serif;
+    background-color: #f0f2f5;
+    color: #1a1a1a;
+    line-height: 1.8; /* 줄 간격 대폭 확대 */
+    margin: 0;
+    padding: 20px;
 }
 
-#app {
-  max-width: 420px;
-  margin: auto;
-  padding: 16px;
-}
-
+/* 문제 카드 컨테이너 */
 .card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+    max-width: 700px;
+    margin: 40px auto;
+    background: #ffffff;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
 }
 
-.hidden {
-  display: none;
+/* 상황 설명 박스 */
+.scenario {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 12px;
+    border-left: 5px solid #0073bb;
+    margin-bottom: 25px;
 }
 
-h1, h2 {
-  margin-top: 0;
+/* 요구사항 리스트 */
+.requirements {
+    margin: 15px 0;
+    padding-left: 20px;
+    font-weight: 500;
 }
 
-.sub {
-  color: #666;
-  font-size: 14px;
+/* 질문 문구 강조 */
+.question-text {
+    font-size: 1.3rem;
+    font-weight: 800;
+    margin: 30px 0;
+    color: #222;
 }
 
-.count-select {
-  display: flex;
-  gap: 10px;
-  margin: 20px 0;
+/* 보기 버튼 스타일 */
+.option-btn {
+    display: block;
+    width: 100%;
+    padding: 18px 25px;
+    margin-bottom: 12px;
+    text-align: left;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    background: white;
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 1.05rem;
 }
 
-.count-select button {
-  flex: 1;
-  padding: 12px;
-  border-radius: 12px;
-  border: 1px solid #ddd;
-  background: #fff;
-}
-
-.count-select button.active {
-  background: #2563eb;
-  color: #fff;
-  border: none;
-}
-
-.primary {
-  width: 100%;
-  padding: 14px;
-  background: #2563eb;
-  color: white;
-  border: none;
-  border-radius: 12px;
-}
-
-.danger {
-  background: #dc2626;
-  color: white;
-}
-
-#options {
-  list-style: none;
-  padding: 0;
-}
-
-#options li {
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  margin-bottom: 10px;
-  cursor: pointer;
-}
-
-#options li.selected {
-  background: #2563eb;
-  color: white;
-}
-
-.nav {
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
+.option-btn:hover {
+    border-color: #0073bb;
+    background-color: #f0faff;
 }
