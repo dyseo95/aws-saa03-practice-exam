@@ -13,16 +13,22 @@ countBtns.forEach(btn => {
 
 // 2. 메인 화면 버튼 이벤트
 document.getElementById('startBtn').onclick = startExam;
-document.getElementById('historyBtn').onclick = showHistory;
+document.getElementById('historyBtn').onclick = showHistoryList;
 document.getElementById('restartBtn').onclick = () => location.reload();
+
+// 오답노트 관련 네비게이션
 document.getElementById('backToStartBtn').onclick = () => {
     document.getElementById('history-screen').classList.add('hidden');
     document.getElementById('start-screen').classList.remove('hidden');
 };
+document.getElementById('backToHistoryBtn').onclick = () => {
+    document.getElementById('history-detail-screen').classList.add('hidden');
+    document.getElementById('history-screen').classList.remove('hidden');
+};
 document.getElementById('clearHistoryBtn').onclick = () => {
-    if(confirm('정말 모든 오답 기록을 삭제하시겠습니까?')) {
-        localStorage.removeItem('aws_wrong_notes');
-        showHistory(); // 화면 갱신
+    if(confirm('모든 회차의 기록을 삭제하시겠습니까?')) {
+        localStorage.removeItem('aws_exam_sessions');
+        showHistoryList();
     }
 };
 
@@ -71,9 +77,9 @@ document.getElementById('nextBtn').onclick = () => {
     else { currentIndex++; showQuestion(); window.scrollTo(0,0); }
 };
 document.getElementById('prevBtn').onclick = () => { currentIndex--; showQuestion(); window.scrollTo(0,0); };
-document.getElementById('quitBtn').onclick = finishExam; // 중도 제출 버튼
+document.getElementById('quitBtn').onclick = finishExam;
 
-// 6. 시험 종료 및 결과 처리 (핵심)
+// 6. 시험 종료 및 결과 처리
 function finishExam() {
     if (!confirm("시험을 종료하고 결과를 확인하시겠습니까?")) return;
 
@@ -83,8 +89,6 @@ function finishExam() {
 
     currentExamQuestions.forEach((q, idx) => {
         const isCorrect = userAnswers[idx] === q.answer;
-        
-        // 통계 집계
         if (!stats[q.category]) stats[q.category] = { total: 0, correct: 0 };
         stats[q.category].total++;
 
@@ -92,42 +96,40 @@ function finishExam() {
             score++;
             stats[q.category].correct++;
         } else {
-            // 오답 데이터 생성
             wrongList.push({
-                id: q.id, // 중복 방지용 ID
                 title: q.title,
                 category: q.category,
                 user: userAnswers[idx] || "미선택",
                 correct: q.answer,
-                exp: q.explanation,
-                date: new Date().toLocaleDateString()
+                exp: q.explanation
             });
         }
     });
 
-    // 오답노트 로컬 스토리지에 자동 저장
-    saveToHistory(wrongList);
+    // 회차별 저장 로직 실행
+    saveSession(score, currentExamQuestions.length, wrongList);
     
     // 결과 화면 렌더링
     renderResultScreen(score, stats, wrongList);
 }
 
-// 7. 오답노트 저장 로직
-function saveToHistory(newWrongItems) {
-    if (newWrongItems.length === 0) return;
+// 7. 회차별 저장 (Session Storage)
+function saveSession(score, total, wrongList) {
+    // 오답이 없어도 기록을 남길지 여부 (여기선 오답 없으면 저장 안 함 or 축하 메시지용으로 저장 가능. 현재는 오답 있을 때만 저장 추천)
+    if (wrongList.length === 0) return;
+
+    const sessions = JSON.parse(localStorage.getItem('aws_exam_sessions')) || [];
     
-    const existingData = JSON.parse(localStorage.getItem('aws_wrong_notes')) || [];
-    
-    // 중복 제거 후 병합 (같은 문제는 최신 것으로 업데이트하거나 유지)
-    newWrongItems.forEach(newItem => {
-        // 이미 저장된 문제인지 제목으로 확인 (간단한 중복 방지)
-        const exists = existingData.some(item => item.title === newItem.title);
-        if (!exists) {
-            existingData.unshift(newItem); // 최신 오답을 맨 앞에 추가
-        }
-    });
-    
-    localStorage.setItem('aws_wrong_notes', JSON.stringify(existingData));
+    const newSession = {
+        id: Date.now(),
+        round: sessions.length + 1, // 1회차, 2회차...
+        date: new Date().toLocaleString(),
+        score: `${score} / ${total}`,
+        wrongList: wrongList
+    };
+
+    sessions.unshift(newSession); // 최신 회차가 위로 오게
+    localStorage.setItem('aws_exam_sessions', JSON.stringify(sessions));
 }
 
 // 8. 결과 화면 렌더링
@@ -155,23 +157,52 @@ function renderResultScreen(score, stats, wrongList) {
     }
 }
 
-// 9. 오답노트 보관함 보기
-function showHistory() {
+// 9. 오답노트 보관함 (회차 목록 보기)
+function showHistoryList() {
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('history-screen').classList.remove('hidden');
     
-    const historyList = JSON.parse(localStorage.getItem('aws_wrong_notes')) || [];
-    const container = document.getElementById('history-list');
+    const sessions = JSON.parse(localStorage.getItem('aws_exam_sessions')) || [];
+    const container = document.getElementById('history-sessions');
     container.innerHTML = '';
 
-    if (historyList.length === 0) {
-        container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">저장된 오답 노트가 없습니다. 문제를 풀어보세요!</p>';
-    } else {
-        historyList.forEach(w => container.appendChild(createWrongItemElement(w)));
+    if (sessions.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">저장된 오답 기록이 없습니다.</p>';
+        return;
     }
+
+    sessions.forEach(session => {
+        const div = document.createElement('div');
+        div.className = 'session-item';
+        div.innerHTML = `
+            <div class="session-info">
+                <span class="session-title">${session.round}회차 오답노트</span>
+                <span class="session-date">${session.date}</span>
+            </div>
+            <span class="session-score">점수: ${session.score}</span>
+        `;
+        // 클릭 시 해당 회차 상세 보기로 이동
+        div.onclick = () => showHistoryDetail(session);
+        container.appendChild(div);
+    });
 }
 
-// 오답 아이템 HTML 생성 헬퍼 함수
+// 10. 회차별 상세 보기
+function showHistoryDetail(session) {
+    document.getElementById('history-screen').classList.add('hidden');
+    document.getElementById('history-detail-screen').classList.remove('hidden');
+
+    document.getElementById('detail-title').innerText = `${session.round}회차 오답 노트`;
+    
+    const container = document.getElementById('history-detail-list');
+    container.innerHTML = '';
+
+    session.wrongList.forEach(w => {
+        container.appendChild(createWrongItemElement(w));
+    });
+}
+
+// 오답 아이템 HTML 생성 헬퍼
 function createWrongItemElement(w) {
     const div = document.createElement('div');
     div.className = 'wrong-item';
