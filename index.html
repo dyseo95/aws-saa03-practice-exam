@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>AWS SAA-03 Practice Exam</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>AWS SAA-03 Practice Exam</h1>
+
+  <div id="exam-select">
+    <button onclick="startExam(30)">30문제</button>
+    <button onclick="startExam(60)">60문제</button>
+    <button onclick="startExam(75)">75문제</button>
+  </div>
+
+  <form id="exam-form" style="display:none;"></form>
+
+  <button id="submitBtn" onclick="submitExam()" style="display:none;">
+    시험 제출
+  </button>
+
+  <div id="result"></div>
+
+  <script src="questions.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
