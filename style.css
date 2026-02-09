@@ -1,109 +1,59 @@
 /* 기본 설정 */
-body {
-    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-    background-color: #f5f7f9;
-    color: #2c3e50;
-    line-height: 1.6;
-    margin: 0;
-    padding: 20px;
-    display: flex;
-    justify-content: center;
-}
-
+body { font-family: 'Pretendard', -apple-system, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 20px; display: flex; justify-content: center; }
 #app { width: 100%; max-width: 800px; }
 
-/* 카드 스타일 */
-.card {
-    background: white;
-    padding: 30px;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    margin-bottom: 20px;
-}
-
-h1, h2 { margin-top: 0; color: #1a1a1a; }
+/* 카드 */
+.card { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+h1, h2 { margin-top: 0; color: #111; }
 .sub { color: #666; margin-bottom: 20px; }
 
-/* 시험 화면 헤더 */
-.exam-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #f0f0f0;
-}
+/* 헤더 */
+.exam-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #eee; }
+#progress { font-weight: bold; color: #007aff; }
+.badge { background: #eee; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; color: #555; }
 
-#progress { font-weight: bold; color: #3498db; font-size: 1.1rem; }
+/* 버튼 공통 */
+button { cursor: pointer; border: none; font-family: inherit; }
+.btn-quit { background: white; border: 1px solid #ff4d4f; color: #ff4d4f; padding: 6px 12px; border-radius: 6px; font-weight: bold; }
+.count-select { display: flex; gap: 10px; margin-bottom: 15px; }
+.count-select button { flex: 1; padding: 12px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; }
+.count-select button.active { background: #007aff; color: white; border-color: #007aff; }
 
-/* 중도 제출/뒤로가기 버튼 */
-.btn-quit {
-    background-color: #fff;
-    border: 1px solid #ff6b6b;
-    color: #ff6b6b;
-    padding: 6px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 0.9rem;
-}
-.btn-quit:hover { background-color: #fff5f5; }
+/* 메인 버튼 */
+.mode-select { display: flex; gap: 10px; margin-bottom: 10px; }
+.primary { background: #007aff; color: white; padding: 16px; border-radius: 12px; font-size: 1.1rem; font-weight: bold; width: 100%; }
+.practice { background: #34c759; color: white; padding: 16px; border-radius: 12px; font-size: 1.1rem; font-weight: bold; width: 100%; }
+.secondary { background: #5856d6; color: white; padding: 16px; border-radius: 12px; font-size: 1.1rem; font-weight: bold; width: 100%; }
+.danger { background: #ff4d4f; color: white; padding: 16px; border-radius: 12px; font-size: 1rem; font-weight: bold; width: 100%; }
 
-/* 문제 영역 */
-#question-title { font-size: 1.25rem; margin-bottom: 20px; white-space: pre-line; }
-
+/* 문제 옵션 */
 #options { list-style: none; padding: 0; }
-#options li {
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 10px;
-    cursor: pointer;
-    transition: 0.2s;
-}
-#options li:hover { background: #f0f7ff; border-color: #3498db; }
-#options li.selected { background: #3498db !important; color: white !important; border-color: #2980b9 !important; }
+#options li { background: #f9f9f9; border: 1px solid #eee; border-radius: 10px; padding: 16px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
+#options li:hover { background: #eef4ff; border-color: #007aff; }
+#options li.selected { background: #007aff; color: white; border-color: #007aff; }
 
-/* 버튼 및 네비게이션 */
-.count-select { display: flex; gap: 10px; margin-bottom: 20px; }
-.count-select button { flex: 1; padding: 12px; background: white; border: 1px solid #ddd; border-radius: 8px; cursor: pointer; }
-.count-select button.active { background: #3498db; color: white; border-color: #2980b9; }
+/* 연습 모드 정답/오답 스타일 */
+#options li.practice-correct { background: #d4f7dc; border-color: #34c759; color: #155724; }
+#options li.practice-wrong { background: #ffe3e3; border-color: #ff4d4f; color: #721c24; }
+.feedback-msg { font-weight: bold; font-size: 1.1rem; margin-top: 15px; }
+.msg-correct { color: #34c759; }
+.msg-wrong { color: #ff4d4f; }
 
-.action-buttons { display: flex; flex-direction: column; gap: 10px; }
+/* 네비게이션 */
 .nav { display: flex; gap: 10px; margin-top: 20px; }
+#prevBtn, #nextBtn, #checkAnswerBtn { flex: 1; padding: 14px; border-radius: 10px; font-weight: bold; font-size: 1rem; }
+#prevBtn { background: #f0f0f0; color: #333; }
+#nextBtn { background: #007aff; color: white; }
+#checkAnswerBtn { background: #34c759; color: white; }
 
-button.primary { background: #3498db; color: white; border: none; padding: 15px; border-radius: 10px; font-size: 1.1rem; font-weight: bold; cursor: pointer; width: 100%; }
-button.secondary { background: #6c5ce7; color: white; border: none; padding: 15px; border-radius: 10px; font-size: 1.1rem; font-weight: bold; cursor: pointer; width: 100%; }
-button.danger { background: #e74c3c; color: white; border: none; padding: 15px; border-radius: 10px; font-size: 1rem; font-weight: bold; cursor: pointer; width: 100%; }
+/* 결과 및 오답노트 */
+.wrong-item { background: #fff5f5; border-left: 4px solid #ff4d4f; padding: 15px; margin-bottom: 15px; border-radius: 4px; }
+.wrong-title { font-weight: bold; margin-bottom: 6px; }
+.wrong-detail { font-size: 0.95rem; margin-bottom: 4px; }
+.wrong-exp { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-top: 10px; font-size: 0.95rem; line-height: 1.5; color: #444; border: 1px dashed #ccc; }
 
-#prevBtn, #nextBtn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-#prevBtn { background: #ecf0f1; color: #333; }
-#nextBtn { background: #3498db; color: white; }
-
-/* 결과 및 오답노트 아이템 */
-.wrong-item { background: #fff5f5; border-left: 5px solid #e74c3c; padding: 15px; margin-bottom: 15px; border-radius: 8px; }
-.wrong-title { font-weight: bold; margin-bottom: 8px; }
-.wrong-detail { font-size: 0.9rem; margin-bottom: 4px; }
-.wrong-exp { background: #fff; padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 0.9rem; color: #555; border: 1px dashed #ccc; }
-
-/* 회차별 리스트 아이템 (NEW) */
-.session-item {
-    background: #f8f9fa;
-    border: 1px solid #e0e0e0;
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.session-item:hover { background: #eef2f7; border-color: #3498db; transform: translateY(-2px); }
-.session-info { display: flex; flex-direction: column; }
-.session-title { font-weight: bold; color: #2c3e50; font-size: 1.1rem; }
-.session-date { font-size: 0.85rem; color: #7f8c8d; margin-top: 4px; }
-.session-score { font-weight: bold; color: #e74c3c; background: #fff5f5; padding: 4px 8px; border-radius: 4px; font-size: 0.9rem; }
+.session-item { background: white; border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+.session-item:hover { border-color: #007aff; background: #f8f9fa; }
+.session-score { font-weight: bold; color: #ff4d4f; }
 
 .hidden { display: none !important; }
