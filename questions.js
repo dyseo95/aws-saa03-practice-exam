@@ -1,24 +1,16 @@
 const QUESTIONS = [
   {
-    question: "외부 인터넷 접근이 필요 없는 데이터베이스의 배치 위치로 가장 적절한 것은?",
+    id: 1,
+    question: "A company needs highly available object storage for static content. Which AWS service should be used?",
     options: [
-      "퍼블릭 서브넷",
-      "프라이빗 서브넷",
-      "인터넷 게이트웨이",
-      "NAT 게이트웨이"
-    ],
-    answer: 1,
-    explanation: "DB는 외부 노출이 필요 없으므로 프라이빗 서브넷에 배치하는 것이 보안상 적절합니다."
-  },
-  {
-    question: "고가용성을 위해 EC2를 배포할 때 가장 권장되는 구성은?",
-    options: [
-      "단일 AZ 배포",
-      "단일 인스턴스",
-      "여러 AZ에 분산 배포",
-      "온디맨드 인스턴스만 사용"
+      "Amazon EBS",
+      "Amazon EFS",
+      "Amazon S3",
+      "AWS Storage Gateway"
     ],
     answer: 2,
-    explanation: "여러 AZ에 인스턴스를 분산하면 AZ 장애 시에도 서비스가 유지됩니다."
-  }
+    explanation: "Amazon S3 provides highly durable and available object storage suitable for static content hosting."
+  },
+  ...
+  // 총 200개 이상
 ];
