@@ -1,16 +1,26 @@
-const QUESTIONS = [
-  {
-    id: 1,
-    question: "A company needs highly available object storage for static content. Which AWS service should be used?",
-    options: [
-      "Amazon EBS",
-      "Amazon EFS",
-      "Amazon S3",
-      "AWS Storage Gateway"
-    ],
-    answer: 2,
-    explanation: "Amazon S3 provides highly durable and available object storage suitable for static content hosting."
-  },
-  ...
-  // 총 200개 이상
+const CATEGORIES = [
+  "EC2",
+  "S3",
+  "VPC",
+  "RDS",
+  "IAM",
+  "HA/DR"
 ];
+
+const QUESTIONS = [];
+
+for (let i = 1; i <= 200; i++) {
+  QUESTIONS.push({
+    id: i,
+    category: CATEGORIES[i % CATEGORIES.length],
+    question: `Sample Question ${i}: Which AWS service best fits this requirement?`,
+    options: [
+      "Option A",
+      "Option B",
+      "Option C",
+      "Option D"
+    ],
+    answer: i % 4,
+    explanation: `This is an explanation for question ${i}.`
+  });
+}
