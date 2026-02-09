@@ -75,3 +75,56 @@ button.primary:hover { background: #2980b9; }
 /* 유틸리티 */
 .hidden { display: none; }
 #progress { margin-bottom: 20px; font-weight: bold; color: #7f8c8d; }
+
+/* 문제 수 선택 버튼 기본 스타일 */
+.count-select {
+    margin: 25px 0;
+    display: flex;
+    gap: 12px;
+}
+
+.count-select button {
+    flex: 1;
+    padding: 12px 0;
+    border: 2px solid #e0e0e0;
+    background-color: #ffffff;
+    color: #666;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* 마우스를 올렸을 때 */
+.count-select button:hover {
+    border-color: #3498db;
+    background-color: #f0faff;
+}
+
+/* ★핵심: 버튼이 선택되었을 때의 스타일 */
+.count-select button.active {
+    background-color: #3498db !important;
+    color: white !important;
+    border-color: #2980b9 !important;
+    box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+}
+
+/* 시험 시작 버튼 스타일 보강 */
+#startBtn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 15px;
+    background-color: #3498db;
+    color: white;
+    font-size: 1.1rem;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+#startBtn:hover {
+    background-color: #2980b9;
+}
