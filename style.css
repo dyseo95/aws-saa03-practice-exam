@@ -1,75 +1,126 @@
-/* 기본 레이아웃 */
-body {
-    font-family: 'Pretendard', sans-serif;
-    background-color: #f8f9fa;
-    color: #333;
-    line-height: 1.8;
-    margin: 0;
-    padding: 20px;
+let currentExamQuestions = [];
+let currentIndex = 0;
+let userAnswers = [];
+
+// 1. 문제 수 버튼 설정
+const countBtns = document.querySelectorAll('.count-select button');
+countBtns.forEach(btn => {
+    btn.onclick = () => {
+        countBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    };
+});
+
+// 2. 시험 시작
+document.getElementById('startBtn').onclick = () => {
+    const activeBtn = document.querySelector('.count-select button.active');
+    if (!activeBtn) return alert("문제 수를 선택하세요!");
+
+    const count = parseInt(activeBtn.dataset.count);
+    currentExamQuestions = [...window.questions].sort(() => Math.random() - 0.5).slice(0, count);
+    currentIndex = 0;
+    userAnswers = new Array(count).fill(null);
+
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('exam-screen').classList.remove('hidden');
+    showQuestion();
+};
+
+// 3. 문제 출력 및 클릭
+function showQuestion() {
+    const q = currentExamQuestions[currentIndex];
+    document.getElementById('progress').innerText = `${currentIndex + 1} / ${currentExamQuestions.length}`;
+    document.getElementById('question-title').innerText = q.title;
+
+    const optionsList = document.getElementById('options');
+    optionsList.innerHTML = '';
+
+    q.options.forEach(opt => {
+        const li = document.createElement('li');
+        li.innerText = opt;
+        if (userAnswers[currentIndex] === opt) li.classList.add('selected');
+        li.onclick = () => {
+            userAnswers[currentIndex] = opt;
+            document.querySelectorAll('#options li').forEach(el => el.classList.remove('selected'));
+            li.classList.add('selected');
+        };
+        optionsList.appendChild(li);
+    });
+
+    // 중도 포기/제출 버튼 보이기 (마지막 문제가 아니어도 제출 가능)
+    const isLast = currentIndex === currentExamQuestions.length - 1;
+    document.getElementById('nextBtn').classList.toggle('hidden', isLast);
 }
 
-#app {
-    max-width: 800px;
-    margin: 40px auto;
+// 4. 네비게이션 및 중도 제출
+document.getElementById('nextBtn').onclick = () => { currentIndex++; showQuestion(); };
+document.getElementById('prevBtn').onclick = () => { currentIndex--; showQuestion(); };
+document.getElementById('submitBtn').onclick = () => finishExam(); // 중도 포기 및 최종 제출 공용
+
+// 5. 결과 분석 핵심 로직
+function finishExam() {
+    if (!confirm("시험을 종료하고 결과를 확인하시겠습니까?")) return;
+
+    let score = 0;
+    const stats = {}; // 카테고리별 통계
+    const wrongList = []; // 오답노트 데이터
+
+    currentExamQuestions.forEach((q, idx) => {
+        const isCorrect = userAnswers[idx] === q.answer;
+        
+        // 통계 계산
+        if (!stats[q.category]) stats[q.category] = { total: 0, correct: 0 };
+        stats[q.category].total++;
+        if (isCorrect) {
+            score++;
+            stats[q.category].correct++;
+        } else {
+            // 오답노트 추가
+            wrongList.push({
+                title: q.title,
+                user: userAnswers[idx] || "미선택",
+                correct: q.answer,
+                explanation: q.explanation
+            });
+        }
+    });
+
+    renderResults(score, stats, wrongList);
 }
 
-/* 카드 공통 스타일 */
-.card {
-    background: white;
-    padding: 40px;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-    margin-bottom: 20px;
+// 6. 결과 화면 렌더링
+function renderResults(score, stats, wrongList) {
+    document.getElementById('exam-screen').classList.add('hidden');
+    document.getElementById('result-screen').classList.remove('hidden');
+    
+    document.getElementById('score').innerText = `총 ${currentExamQuestions.length}문제 중 ${score}문제를 맞혔습니다!`;
+
+    // 카테고리별 정답률
+    const statDiv = document.getElementById('category-stats');
+    statDiv.innerHTML = '<h4>📊 카테고리별 정답률</h4>';
+    for (const cat in stats) {
+        const rate = Math.round((stats[cat].correct / stats[cat].total) * 100);
+        statDiv.innerHTML += `
+            <div class="stat-item">
+                <span>${cat}</span>
+                <span>${rate}% (${stats[cat].correct}/${stats[cat].total})</span>
+            </div>`;
+    }
+
+    // 오답 노트
+    const noteDiv = document.getElementById('wrong-notes');
+    noteDiv.innerHTML = '<h4>❌ 오답 노트</h4>';
+    if (wrongList.length === 0) {
+        noteDiv.innerHTML += '<p>모든 문제를 맞히셨습니다! 완벽해요!</p>';
+    } else {
+        wrongList.forEach(w => {
+            noteDiv.innerHTML += `
+                <div class="wrong-item">
+                    <div class="wrong-title">${w.title}</div>
+                    <div style="color:#e74c3c; font-size:0.9rem;">내 선택: ${w.user}</div>
+                    <div class="wrong-ans">정답: ${w.correct}</div>
+                    <div class="wrong-exp">해설: ${w.explanation}</div>
+                </div>`;
+        });
+    }
 }
-
-/* 문제 텍스트 강조 */
-#question-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin-bottom: 25px;
-    white-space: pre-line; /* 줄바꿈 유지 필수 */
-}
-
-/* 보기 리스트 (눌렀을 때 파란색 반영) */
-#options {
-    list-style: none;
-    padding: 0;
-}
-
-#options li {
-    padding: 16px 20px;
-    margin-bottom: 12px;
-    border: 2px solid #eee;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: 0.2s;
-    font-weight: 500;
-}
-
-#options li:hover { background-color: #f0f7ff; border-color: #3498db; }
-
-/* ★보기가 선택되었을 때 */
-#options li.selected {
-    background-color: #3498db !important;
-    color: white !important;
-    border-color: #2980b9 !important;
-}
-
-/* 메인 화면 문제수 버튼 */
-.count-select { display: flex; gap: 10px; margin: 20px 0; }
-.count-select button {
-    flex: 1; padding: 12px; border: 2px solid #eee; background: white;
-    border-radius: 10px; cursor: pointer; font-weight: 600;
-}
-
-/* ★문제수가 선택되었을 때 */
-.count-select button.active {
-    background-color: #3498db !important;
-    color: white !important;
-    border-color: #2980b9 !important;
-}
-
-/* 버튼 유틸리티 */
-button.primary { width: 100%; background: #3498db; color: white; padding: 15px; border-radius: 10px; border: none; font-size: 1.1rem; cursor: pointer; }
-.hidden { display: none !important; }
-.nav { display: flex; gap: 10px; margin-top: 20px; }
