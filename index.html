@@ -54,15 +54,24 @@
   </section>
 
   <section id="history-screen" class="hidden card">
-    <h2>📂 내 오답노트 보관함</h2>
-    <p class="sub">지금까지 틀린 문제가 자동으로 누적 저장됩니다.</p>
+    <h2>📂 오답노트 기록</h2>
+    <p class="sub">시험을 치를 때마다 회차별로 자동 저장됩니다.</p>
     
-    <div id="history-list"></div>
+    <div id="history-sessions"></div>
     
     <div class="nav">
       <button id="backToStartBtn" class="primary">메인으로 돌아가기</button>
       <button id="clearHistoryBtn" class="danger">기록 전체 삭제</button>
     </div>
+  </section>
+
+  <section id="history-detail-screen" class="hidden card">
+    <div class="exam-header">
+      <h2 id="detail-title">1회차 오답 노트</h2>
+      <button id="backToHistoryBtn" class="btn-quit">목록으로</button>
+    </div>
+    
+    <div id="history-detail-list"></div>
   </section>
 
 </div>
