@@ -1,13 +1,75 @@
-/* 메인 화면 문제수 버튼 선택 시 */
+/* 기본 레이아웃 */
+body {
+    font-family: 'Pretendard', sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+    line-height: 1.8;
+    margin: 0;
+    padding: 20px;
+}
+
+#app {
+    max-width: 800px;
+    margin: 40px auto;
+}
+
+/* 카드 공통 스타일 */
+.card {
+    background: white;
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+
+/* 문제 텍스트 강조 */
+#question-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 25px;
+    white-space: pre-line; /* 줄바꿈 유지 필수 */
+}
+
+/* 보기 리스트 (눌렀을 때 파란색 반영) */
+#options {
+    list-style: none;
+    padding: 0;
+}
+
+#options li {
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    border: 2px solid #eee;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.2s;
+    font-weight: 500;
+}
+
+#options li:hover { background-color: #f0f7ff; border-color: #3498db; }
+
+/* ★보기가 선택되었을 때 */
+#options li.selected {
+    background-color: #3498db !important;
+    color: white !important;
+    border-color: #2980b9 !important;
+}
+
+/* 메인 화면 문제수 버튼 */
+.count-select { display: flex; gap: 10px; margin: 20px 0; }
+.count-select button {
+    flex: 1; padding: 12px; border: 2px solid #eee; background: white;
+    border-radius: 10px; cursor: pointer; font-weight: 600;
+}
+
+/* ★문제수가 선택되었을 때 */
 .count-select button.active {
     background-color: #3498db !important;
     color: white !important;
     border-color: #2980b9 !important;
 }
 
-/* 문제 화면 보기 선택 시 */
-#options li.selected {
-    background-color: #3498db !important;
-    color: white !important;
-    border-color: #2980b9 !important;
-}
+/* 버튼 유틸리티 */
+button.primary { width: 100%; background: #3498db; color: white; padding: 15px; border-radius: 10px; border: none; font-size: 1.1rem; cursor: pointer; }
+.hidden { display: none !important; }
+.nav { display: flex; gap: 10px; margin-top: 20px; }
