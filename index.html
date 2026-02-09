@@ -12,16 +12,20 @@
 
   <section id="start-screen" class="card">
     <h1>AWS SAA-C03 모의고사</h1>
-    <p class="sub">실전 난이도 연습문제 (랜덤 출제)</p>
+    <p class="sub">451문제 완전 정복</p>
 
     <div class="count-select">
       <button data-count="30">30문제</button>
       <button data-count="60" class="active">60문제</button>
-      <button data-count="75">75문제</button>
+      <button data-count="100">100문제</button>
+    </div>
+
+    <div class="mode-select">
+      <button id="startExamBtn" class="primary">📝 실전 모드 (시간 제한, 결과 나중에)</button>
+      <button id="startPracticeBtn" class="practice">🎓 연습 모드 (즉시 해설 확인)</button>
     </div>
 
     <div class="action-buttons">
-      <button id="startBtn" class="primary">시험 시작하기 →</button>
       <button id="historyBtn" class="secondary">📂 오답노트 보관함</button>
     </div>
   </section>
@@ -29,14 +33,24 @@
   <section id="exam-screen" class="hidden card">
     <div class="exam-header">
       <span id="progress">1 / 60</span>
+      <span id="mode-badge" class="badge">실전</span>
       <button id="quitBtn" class="btn-quit">중도 제출</button>
     </div>
 
-    <h2 id="question-title">문제 제목이 여기에 표시됩니다.</h2>
+    <h2 id="question-title">문제 제목</h2>
     <ul id="options"></ul>
+
+    <div id="practice-feedback" class="hidden">
+      <div id="feedback-msg" class="feedback-msg"></div>
+      <div class="wrong-exp">
+        <strong>💡 해설:</strong>
+        <p id="feedback-explanation"></p>
+      </div>
+    </div>
 
     <div class="nav">
       <button id="prevBtn">이전</button>
+      <button id="checkAnswerBtn" class="check-btn hidden">정답 확인</button>
       <button id="nextBtn">다음</button>
     </div>
   </section>
@@ -55,22 +69,18 @@
 
   <section id="history-screen" class="hidden card">
     <h2>📂 오답노트 기록</h2>
-    <p class="sub">시험을 치를 때마다 회차별로 자동 저장됩니다.</p>
-    
     <div id="history-sessions"></div>
-    
     <div class="nav">
-      <button id="backToStartBtn" class="primary">메인으로 돌아가기</button>
-      <button id="clearHistoryBtn" class="danger">기록 전체 삭제</button>
+      <button id="backToStartBtn" class="primary">메인으로</button>
+      <button id="clearHistoryBtn" class="danger">기록 삭제</button>
     </div>
   </section>
 
   <section id="history-detail-screen" class="hidden card">
     <div class="exam-header">
-      <h2 id="detail-title">1회차 오답 노트</h2>
+      <h2 id="detail-title">상세 보기</h2>
       <button id="backToHistoryBtn" class="btn-quit">목록으로</button>
     </div>
-    
     <div id="history-detail-list"></div>
   </section>
 
