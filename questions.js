@@ -1,26 +1,22 @@
 /**
  * 이 파일은 한국어 전용 AWS SAA-C03 문제 생성기입니다.
- * 200문제를 동적으로 생성하며 모든 텍스트는 한국어로만 구성됩니다.
  */
 const generateQuestions = () => {
     const data = [];
-    const subjects = ["보안", "컴퓨팅", "네트워크", "저장소", "데이터베이스", "비용 최적화"];
     const templates = [
         {
             category: "보안",
-            title: "신원 및 액세스 관리 보안 정책",
-            content: "한 회사에서 새로운 시스템을 구축하며 사용자에게 최소한의 권한만 부여하고자 합니다. 또한 특정 역할에 따라 권한을 유연하게 할당해야 하는 상황입니다.\n\n- 요구사항 1: 최소 권한 원칙 적용\n- 요구사항 2: 개별 사용자 관리가 아닌 역할 기반 제어\n- 요구사항 3: 추가적인 비용 발생 방지",
-            options: ["신원 정책과 역할을 생성하여 권한 할당", "모든 사용자에게 관리자 권한 부여", "네트워크 방화벽에서 모든 포트 개방", "매번 수동으로 임시 비밀번호 발급"],
-            answer: "신원 정책과 역할을 생성하여 권한 할당",
-            explanation: "역할 기반의 접근 제어는 보안성을 높이면서도 관리가 용이하며 별도의 서비스 비용이 들지 않는 표준 보안 방식입니다."
+            content: "한 회사에서 AWS 리소스에 대한 접근 제어를 구성하려고 합니다. 이 회사는 다음 요구사항을 충족해야 합니다.\n\n- 최소 권한 원칙을 적용해야 합니다.\n- 사용자와 서비스의 권한을 분리해야 합니다.\n- 비용 최적화가 중요합니다.",
+            options: ["보안 그룹을 사용한다.", "IAM 정책과 역할을 사용한다.", "NACL을 사용한다.", "라우팅 테이블을 수정한다."],
+            answer: "IAM 정책과 역할을 사용한다.",
+            explanation: "IAM 역할과 정책을 사용하면 개별 사용자나 서비스에 필요한 최소한의 권한만 부여할 수 있으며 추가 비용이 발생하지 않습니다."
         },
         {
-            category: "저장소",
-            title: "정적 웹 사이트 가속화 솔루션",
-            content: "전 세계 사용자를 대상으로 정적 콘텐츠를 배포하는 기업이 지연 시간을 줄이고자 합니다. 원본 저장소의 부하를 줄이는 것도 핵심 목표입니다.\n\n- 요구사항 1: 전 세계 에지 위치 활용\n- 요구사항 2: 원본 서버의 데이터 전송 비용 절감\n- 요구사항 3: 캐싱 기능을 통한 응답 속도 향상",
-            options: ["콘텐츠 전송 네트워크 활용 및 캐싱 설정", "지역별로 서버를 직접 수동 복제", "단일 지역에 고성능 하드웨어 배치", "데이터를 압축하여 이메일로 발송"],
-            answer: "콘텐츠 전송 네트워크 활용 및 캐싱 설정",
-            explanation: "전 세계 거점(에지 로케이션)에 데이터를 캐싱함으로써 사용자에게 가장 가까운 곳에서 데이터를 전달하여 성능을 극대화할 수 있습니다."
+            category: "데이터베이스",
+            content: "신규 서비스가 높은 가용성을 필요로 하며, 읽기 요청이 폭주할 것으로 예상됩니다. 운영 부담을 줄이면서 성능을 확장해야 합니다.\n\n- 요구사항 1: 관리형 서비스 사용\n- 요구사항 2: 읽기 전용 복제본 생성 가능\n- 요구사항 3: 자동 백업 지원",
+            options: ["Amazon RDS 사용", "EC2에 데이터베이스 직접 설치", "S3에 텍스트로 저장", "온프레미스 서버 활용"],
+            answer: "Amazon RDS 사용",
+            explanation: "Amazon RDS는 관리형 서비스로 읽기 전용 복제본과 자동 백업을 지원하여 운영 효율성을 극대화합니다."
         }
     ];
 
@@ -28,10 +24,9 @@ const generateQuestions = () => {
         const t = templates[i % templates.length];
         data.push({
             id: i,
-            category: subjects[i % subjects.length],
-            title: `${t.title} (문제 ${i})`,
-            content: t.content,
-            options: [...t.options].sort(() => Math.random() - 0.5),
+            category: t.category,
+            title: t.content, // 기존 app.js가 h2#question-title에 뿌리는 데이터
+            options: t.options,
             answer: t.answer,
             explanation: t.explanation
         });
@@ -40,4 +35,3 @@ const generateQuestions = () => {
 };
 
 window.questions = generateQuestions();
-console.log(`총 문제 생성 완료: ${window.questions.length}개`);
