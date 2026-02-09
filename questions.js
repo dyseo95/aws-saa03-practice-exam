@@ -4,8 +4,6 @@
  */
 const generateQuestions = () => {
     const qList = [
-    // 기존 qList 배열 안에 아래 객체들을 쉼표(,)로 구분하여 추가하세요.
-    
     // Q1: 데이터베이스 캐싱 전략 (ElastiCache)
     {
         category: "데이터베이스",
@@ -4074,8 +4072,6 @@ const generateQuestions = () => {
         answer: "CloudFront 필드 레벨 암호화(Field-level encryption) 사용",
         explanation: "필드 레벨 암호화를 사용하면 CloudFront가 공개키로 특정 필드를 암호화하며, 오직 개인키를 가진 결제 처리 서버만 이를 복호화할 수 있습니다."
     }
-
-
         ];
 
     return qList.map((q, index) => ({
@@ -4089,4 +4085,5 @@ const generateQuestions = () => {
 };
 
 window.questions = generateQuestions();
+
 
