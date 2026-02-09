@@ -1,63 +1,77 @@
-/* 기본 폰트 및 배경 */
+/* 기본 폰트 설정 */
 body {
-    font-family: 'Pretendard', sans-serif;
-    background-color: #f0f2f5;
-    color: #1a1a1a;
-    line-height: 1.8; /* 줄 간격 대폭 확대 */
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #f5f7f9;
+    color: #2c3e50;
+    line-height: 1.8; /* 가독성을 위한 핵심: 줄 간격 확대 */
     margin: 0;
+    display: flex;
+    justify-content: center;
     padding: 20px;
 }
 
-/* 문제 카드 컨테이너 */
+#app { width: 100%; max-width: 800px; }
+
+/* 카드 스타일 */
 .card {
-    max-width: 700px;
-    margin: 40px auto;
     background: #ffffff;
     padding: 40px;
-    border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
-/* 상황 설명 박스 */
-.scenario {
-    background-color: #f8f9fa;
-    padding: 20px;
-    border-radius: 12px;
-    border-left: 5px solid #0073bb;
-    margin-bottom: 25px;
+/* 문제 텍스트 가독성 */
+#question-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    white-space: pre-wrap; /* 줄바꿈 유지 */
+    color: #1a1a1a;
 }
 
-/* 요구사항 리스트 */
-.requirements {
-    margin: 15px 0;
-    padding-left: 20px;
+/* 보기 리스트 디자인 */
+#options {
+    list-style: none;
+    padding: 0;
+    margin: 30px 0;
+}
+
+#options li {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
     font-weight: 500;
 }
 
-/* 질문 문구 강조 */
-.question-text {
-    font-size: 1.3rem;
-    font-weight: 800;
-    margin: 30px 0;
-    color: #222;
+#options li:hover {
+    background: #eef2f7;
+    border-color: #3498db;
+    transform: translateY(-2px);
 }
 
-/* 보기 버튼 스타일 */
-.option-btn {
-    display: block;
-    width: 100%;
-    padding: 18px 25px;
-    margin-bottom: 12px;
-    text-align: left;
-    border: 2px solid #e0e0e0;
-    border-radius: 12px;
-    background: white;
+#options li.selected {
+    background: #3498db;
+    color: white;
+    border-color: #2980b9;
+}
+
+/* 버튼 스타일 */
+button {
+    padding: 12px 24px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
     cursor: pointer;
-    transition: 0.2s;
-    font-size: 1.05rem;
+    transition: 0.3s;
 }
 
-.option-btn:hover {
-    border-color: #0073bb;
-    background-color: #f0faff;
-}
+button.primary { background: #3498db; color: white; width: 100%; font-size: 1.1rem; }
+button.primary:hover { background: #2980b9; }
+
+/* 유틸리티 */
+.hidden { display: none; }
+#progress { margin-bottom: 20px; font-weight: bold; color: #7f8c8d; }
