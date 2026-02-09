@@ -1,7 +1,8 @@
 let currentExamQuestions = [];
 let currentIndex = 0;
 let userAnswers = [];
-let isPracticeMode = false; // 현재 모드 상태 (false: 실전, true: 연습)
+let isPracticeMode = false;
+let currentSessionData = null; // 현재 보고 있는 오답노트 데이터 저장용
 
 // 1. 문제 수 선택
 const countBtns = document.querySelectorAll('.count-select button');
@@ -23,10 +24,12 @@ document.getElementById('backToStartBtn').onclick = () => {
     document.getElementById('history-screen').classList.add('hidden');
     document.getElementById('start-screen').classList.remove('hidden');
 };
+
 document.getElementById('backToHistoryBtn').onclick = () => {
     document.getElementById('history-detail-screen').classList.add('hidden');
     document.getElementById('history-screen').classList.remove('hidden');
 };
+
 document.getElementById('clearHistoryBtn').onclick = () => {
     if(confirm('모든 기록을 삭제하시겠습니까?')) {
         localStorage.removeItem('aws_exam_sessions');
@@ -34,22 +37,26 @@ document.getElementById('clearHistoryBtn').onclick = () => {
     }
 };
 
-// 3. 시험 초기화 (모드 구분)
+// ★ [추가된 기능] TXT 다운로드 버튼 이벤트 연결
+document.getElementById('downloadTxtBtn').onclick = () => {
+    if (currentSessionData) {
+        downloadTxt(currentSessionData);
+    }
+};
+
+// 3. 시험 초기화
 function initExam(practice) {
     isPracticeMode = practice;
     const activeBtn = document.querySelector('.count-select button.active');
     const count = parseInt(activeBtn.dataset.count);
     
-    // 전체 문제에서 랜덤 추출
     currentExamQuestions = [...window.questions].sort(() => Math.random() - 0.5).slice(0, count);
     currentIndex = 0;
     userAnswers = new Array(count).fill(null);
 
-    // UI 초기화
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('exam-screen').classList.remove('hidden');
     
-    // 모드 뱃지 설정
     const badge = document.getElementById('mode-badge');
     badge.innerText = isPracticeMode ? "🎓 연습 모드" : "📝 실전 모드";
     badge.style.background = isPracticeMode ? "#e8f5e9" : "#e7f5ff";
@@ -64,12 +71,10 @@ function showQuestion() {
     document.getElementById('progress').innerText = `문제 ${currentIndex + 1} / ${currentExamQuestions.length}`;
     document.getElementById('question-title').innerText = q.title;
 
-    // 연습모드용 피드백 영역 숨기기
     document.getElementById('practice-feedback').classList.add('hidden');
     document.getElementById('checkAnswerBtn').classList.add('hidden');
     document.getElementById('nextBtn').classList.remove('hidden');
 
-    // 옵션 출력
     const optionsList = document.getElementById('options');
     optionsList.innerHTML = '';
 
@@ -77,14 +82,12 @@ function showQuestion() {
         const li = document.createElement('li');
         li.innerText = opt;
         
-        // 이미 선택한 답이 있다면 표시
         if (userAnswers[currentIndex] === opt) {
             li.classList.add('selected');
         }
 
         li.onclick = () => {
-            // 이미 정답 확인을 한 상태(연습모드)라면 선택 변경 불가
-            if (isPracticeMode && document.getElementById('practice-feedback').classList.contains('hidden') === false) return;
+            if (isPracticeMode && !document.getElementById('practice-feedback').classList.contains('hidden')) return;
 
             userAnswers[currentIndex] = opt;
             document.querySelectorAll('#options li').forEach(el => el.classList.remove('selected'));
@@ -93,24 +96,19 @@ function showQuestion() {
         optionsList.appendChild(li);
     });
 
-    // 버튼 상태 관리
     document.getElementById('prevBtn').style.visibility = currentIndex === 0 ? 'hidden' : 'visible';
     
     const nextBtn = document.getElementById('nextBtn');
     
     if (isPracticeMode) {
-        // 연습모드: '정답 확인' 버튼 우선 표시, 확인 후 '다음' 버튼 표시
-        // 이미 푼 문제라면 바로 결과 보여주기 (옵션) - 여기선 단순화 위해 다시 풀기 가능하게 함
-        // 단, 뒤로가기 했다가 다시 오면 초기화됨 (원하면 상태 저장 로직 추가 가능)
         document.getElementById('checkAnswerBtn').classList.remove('hidden');
-        nextBtn.classList.add('hidden'); // 일단 숨김
+        nextBtn.classList.add('hidden');
     } else {
-        // 실전모드: 항상 '다음' 버튼
         nextBtn.innerText = (currentIndex === currentExamQuestions.length - 1) ? '최종 제출' : '다음';
     }
 }
 
-// 5. 연습 모드: 정답 확인 로직
+// 5. 정답 확인 (연습 모드)
 document.getElementById('checkAnswerBtn').onclick = () => {
     const selectedAnswer = userAnswers[currentIndex];
     if (!selectedAnswer) {
@@ -124,17 +122,15 @@ document.getElementById('checkAnswerBtn').onclick = () => {
     const msgBox = document.getElementById('feedback-msg');
     const expBox = document.getElementById('feedback-explanation');
 
-    // 정답/오답 UI 표시
     options.forEach(li => {
         if (li.innerText === q.answer) {
-            li.classList.add('practice-correct'); // 정답 초록색
+            li.classList.add('practice-correct');
         }
         if (li.innerText === selectedAnswer && selectedAnswer !== q.answer) {
-            li.classList.add('practice-wrong'); // 내가 틀린 것 빨간색
+            li.classList.add('practice-wrong');
         }
     });
 
-    // 메시지 및 해설 표시
     if (selectedAnswer === q.answer) {
         msgBox.innerHTML = "<span class='msg-correct'>✅ 정답입니다!</span>";
     } else {
@@ -143,14 +139,13 @@ document.getElementById('checkAnswerBtn').onclick = () => {
     expBox.innerText = q.explanation;
     feedbackBox.classList.remove('hidden');
 
-    // 버튼 교체: 정답 확인 -> 다음 문제
     document.getElementById('checkAnswerBtn').classList.add('hidden');
     const nextBtn = document.getElementById('nextBtn');
     nextBtn.classList.remove('hidden');
     nextBtn.innerText = (currentIndex === currentExamQuestions.length - 1) ? '결과 보기' : '다음';
 };
 
-// 6. 네비게이션 이벤트
+// 6. 네비게이션
 document.getElementById('nextBtn').onclick = () => {
     if (currentIndex === currentExamQuestions.length - 1) {
         finishExam();
@@ -169,7 +164,7 @@ document.getElementById('prevBtn').onclick = () => {
 
 document.getElementById('quitBtn').onclick = finishExam;
 
-// 7. 시험 종료 및 저장
+// 7. 시험 종료
 function finishExam() {
     if (!confirm("시험을 종료하고 결과를 확인하시겠습니까?")) return;
 
@@ -180,7 +175,6 @@ function finishExam() {
     currentExamQuestions.forEach((q, idx) => {
         const isCorrect = userAnswers[idx] === q.answer;
         
-        // 통계 집계
         if (!stats[q.category]) stats[q.category] = { total: 0, correct: 0 };
         stats[q.category].total++;
 
@@ -198,12 +192,11 @@ function finishExam() {
         }
     });
 
-    // 연습모드여도 오답노트는 저장 (선택 사항)
     saveSession(score, currentExamQuestions.length, wrongList);
     renderResultScreen(score, stats, wrongList);
 }
 
-// 8. 데이터 저장
+// 8. 저장
 function saveSession(score, total, wrongList) {
     if (wrongList.length === 0 && !confirm("오답이 없습니다. 기록을 저장할까요?")) return;
 
@@ -211,7 +204,7 @@ function saveSession(score, total, wrongList) {
     const newSession = {
         id: Date.now(),
         round: sessions.length + 1,
-        mode: isPracticeMode ? '연습' : '실전', // 모드 기록
+        mode: isPracticeMode ? '연습' : '실전',
         date: new Date().toLocaleString(),
         score: `${score} / ${total}`,
         wrongList: wrongList
@@ -274,6 +267,9 @@ function showHistoryList() {
 }
 
 function showHistoryDetail(session) {
+    // 현재 세션 데이터를 전역 변수에 저장 (다운로드 시 사용)
+    currentSessionData = session;
+
     document.getElementById('history-screen').classList.add('hidden');
     document.getElementById('history-detail-screen').classList.remove('hidden');
     document.getElementById('detail-title').innerText = `${session.round}회차 오답 노트`;
@@ -281,6 +277,32 @@ function showHistoryDetail(session) {
     const container = document.getElementById('history-detail-list');
     container.innerHTML = '';
     session.wrongList.forEach(w => container.appendChild(createWrongItemElement(w)));
+}
+
+// ★ [추가된 함수] TXT 다운로드 기능
+function downloadTxt(session) {
+    let content = `[AWS SAA-C03 오답노트]\n`;
+    content += `회차: ${session.round}회차 (${session.mode} 모드)\n`;
+    content += `일시: ${session.date}\n`;
+    content += `점수: ${session.score}\n`;
+    content += `--------------------------------------------------\n\n`;
+
+    session.wrongList.forEach((w, index) => {
+        content += `[문제 ${index + 1}] (${w.category})\n`;
+        content += `Q. ${w.title}\n\n`;
+        content += `❌ 나의 선택: ${w.user}\n`;
+        content += `✅ 정답: ${w.correct}\n\n`;
+        content += `💡 해설:\n${w.exp}\n`;
+        content += `==================================================\n\n`;
+    });
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `오답노트_${session.round}회차_${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+    window.URL.revokeObjectURL(url);
 }
 
 function createWrongItemElement(w) {
