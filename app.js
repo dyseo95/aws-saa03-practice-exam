@@ -1,93 +1,65 @@
-let selectedCount = 60;
-let examQuestions = [];
-let answers = {};
-let current = 0;
+let currentExamQuestions = [];
+let currentIndex = 0;
+let userAnswers = [];
 
-const startScreen = document.getElementById("start-screen");
-const examScreen = document.getElementById("exam-screen");
-const resultScreen = document.getElementById("result-screen");
-
-document.querySelectorAll(".count-select button").forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll(".count-select button")
-      .forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    selectedCount = Number(btn.dataset.count);
-  };
+// 시작 버튼 이벤트
+document.getElementById('startBtn').addEventListener('click', () => {
+    const count = document.querySelector('.count-select button.active').dataset.count;
+    currentExamQuestions = [...window.questions].sort(() => Math.random() - 0.5).slice(0, count);
+    currentIndex = 0;
+    userAnswers = new Array(currentExamQuestions.length).fill(null);
+    
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('exam-screen').classList.remove('hidden');
+    showQuestion();
 });
 
-document.getElementById("startBtn").onclick = () => {
-  if (!QUESTIONS || QUESTIONS.length === 0) {
-    alert("문제 데이터가 없습니다");
-    return;
-  }
+// 문제 표시 함수
+function showQuestion() {
+    const q = currentExamQuestions[currentIndex];
+    document.getElementById('progress').innerText = `${currentIndex + 1} / ${currentExamQuestions.length}`;
+    
+    // 핵심 가독성 수정: 줄바꿈 적용
+    const titleElement = document.getElementById('question-title');
+    titleElement.style.whiteSpace = "pre-line"; 
+    titleElement.innerText = q.title;
 
-  examQuestions = [...QUESTIONS]
-    .sort(() => 0.5 - Math.random())
-    .slice(0, selectedCount);
+    const optionsList = document.getElementById('options');
+    optionsList.innerHTML = '';
 
-  current = 0;
-  answers = {};
+    q.options.forEach(opt => {
+        const li = document.createElement('li');
+        li.innerText = opt;
+        if (userAnswers[currentIndex] === opt) li.classList.add('selected');
+        li.onclick = () => {
+            userAnswers[currentIndex] = opt;
+            showQuestion(); // 선택 시 시각적 업데이트
+        };
+        optionsList.appendChild(li);
+    });
 
-  startScreen.classList.add("hidden");
-  examScreen.classList.remove("hidden");
+    // 버튼 제어
+    document.getElementById('prevBtn').style.visibility = currentIndex === 0 ? 'hidden' : 'visible';
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
 
-  render();
-};
-
-function render() {
-  const q = examQuestions[current];
-
-  document.getElementById("progress").innerText =
-    `${current + 1} / ${examQuestions.length}`;
-
-  document.getElementById("question-title").innerText = q.question;
-
-  const options = document.getElementById("options");
-  options.innerHTML = "";
-
-  q.options.forEach((opt, idx) => {
-    const li = document.createElement("li");
-    li.innerText = opt;
-    if (answers[q.id] === idx) li.classList.add("selected");
-    li.onclick = () => {
-      answers[q.id] = idx;
-      render();
-    };
-    options.appendChild(li);
-  });
-
-  document.getElementById("prevBtn").style.display =
-    current === 0 ? "none" : "inline-block";
-
-  document.getElementById("nextBtn").style.display =
-    current === examQuestions.length - 1 ? "none" : "inline-block";
-
-  document.getElementById("submitBtn").classList.toggle(
-    "hidden",
-    current !== examQuestions.length - 1
-  );
+    if (currentIndex === currentExamQuestions.length - 1) {
+        nextBtn.classList.add('hidden');
+        submitBtn.classList.remove('hidden');
+    } else {
+        nextBtn.classList.remove('hidden');
+        submitBtn.classList.add('hidden');
+    }
 }
 
-document.getElementById("prevBtn").onclick = () => {
-  current--;
-  render();
-};
+// 다음/이전 버튼 이벤트
+document.getElementById('nextBtn').onclick = () => { currentIndex++; showQuestion(); };
+document.getElementById('prevBtn').onclick = () => { currentIndex--; showQuestion(); };
 
-document.getElementById("nextBtn").onclick = () => {
-  current++;
-  render();
-};
-
-document.getElementById("submitBtn").onclick = () => {
-  examScreen.classList.add("hidden");
-  resultScreen.classList.remove("hidden");
-
-  let correct = 0;
-  examQuestions.forEach(q => {
-    if (answers[q.id] === q.answer) correct++;
-  });
-
-  document.getElementById("score").innerText =
-    `점수: ${correct} / ${examQuestions.length}`;
-};
+// 문제수 선택 로직
+document.querySelectorAll('.count-select button').forEach(btn => {
+    btn.onclick = () => {
+        document.querySelectorAll('.count-select button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    };
+});
