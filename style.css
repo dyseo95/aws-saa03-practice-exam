@@ -1,115 +1,13 @@
-/**
- * AWS SAA-C03 연습문제 로직
- */
-
-let currentExamQuestions = [];
-let currentIndex = 0;
-let userAnswers = [];
-
-// 1. 문제 수 선택 버튼 UI 제어 (클릭 시 파란색으로 변경)
-const countButtons = document.querySelectorAll('.count-select button');
-
-countButtons.forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        // 모든 버튼에서 active 클래스 제거
-        countButtons.forEach(b => b.classList.remove('active'));
-        
-        // 클릭된 버튼에 active 클래스 추가 (여기서 style.css의 파란색이 적용됩니다)
-        e.target.classList.add('active');
-        
-        console.log(`선택된 문제 수: ${e.target.dataset.count}`);
-    });
-});
-
-// 2. 시험 시작 버튼 클릭
-document.getElementById('startBtn').onclick = () => {
-    const activeBtn = document.querySelector('.count-select button.active');
-    
-    if (!activeBtn) {
-        alert("문제 수를 선택해주세요 (30, 60, 75 중 하나)");
-        return;
-    }
-
-    const count = parseInt(activeBtn.dataset.count);
-    
-    // 문제 랜덤 셔플 및 선택된 개수만큼 추출
-    currentExamQuestions = [...window.questions].sort(() => Math.random() - 0.5).slice(0, count);
-    currentIndex = 0;
-    userAnswers = new Array(currentExamQuestions.length).fill(null);
-    
-    // 화면 전환
-    document.getElementById('start-screen').classList.add('hidden');
-    document.getElementById('exam-screen').classList.remove('hidden');
-    showQuestion();
-};
-
-// 3. 문제 출력 함수
-function showQuestion() {
-    const q = currentExamQuestions[currentIndex];
-    
-    // 상단 진행바 업데이트
-    document.getElementById('progress').innerText = `문제 ${currentIndex + 1} / ${currentExamQuestions.length}`;
-    
-    // 문제 내용 (줄바꿈 반영)
-    const title = document.getElementById('question-title');
-    title.style.whiteSpace = "pre-line"; 
-    title.innerText = q.title;
-
-    // 보기 리스트 생성
-    const optionsList = document.getElementById('options');
-    optionsList.innerHTML = '';
-
-    q.options.forEach(opt => {
-        const li = document.createElement('li');
-        li.innerText = opt;
-        
-        // 이전에 선택한 답이면 스타일 유지
-        if (userAnswers[currentIndex] === opt) {
-            li.classList.add('selected');
-        }
-
-        // 보기 클릭 이벤트
-        li.onclick = () => {
-            userAnswers[currentIndex] = opt;
-            
-            // 시각적 업데이트: 다른 보기는 평범하게, 선택한 보기는 파란색으로
-            const allLi = optionsList.querySelectorAll('li');
-            allLi.forEach(item => item.classList.remove('selected'));
-            li.classList.add('selected');
-        };
-        
-        optionsList.appendChild(li);
-    });
-
-    // 네비게이션 버튼 가시성 제어
-    document.getElementById('prevBtn').style.display = currentIndex === 0 ? 'none' : 'inline-block';
-    
-    const nextBtn = document.getElementById('nextBtn');
-    const submitBtn = document.getElementById('submitBtn');
-
-    if (currentIndex === currentExamQuestions.length - 1) {
-        nextBtn.classList.add('hidden');
-        submitBtn.classList.remove('hidden');
-    } else {
-        nextBtn.classList.remove('hidden');
-        submitBtn.classList.add('hidden');
-    }
+/* 메인 화면 문제수 버튼 선택 시 */
+.count-select button.active {
+    background-color: #3498db !important;
+    color: white !important;
+    border-color: #2980b9 !important;
 }
 
-// 4. 네비게이션 버튼 이벤트
-document.getElementById('nextBtn').onclick = () => { currentIndex++; showQuestion(); window.scrollTo(0,0); };
-document.getElementById('prevBtn').onclick = () => { currentIndex--; showQuestion(); window.scrollTo(0,0); };
-
-// 5. 제출 버튼 (간단 결과)
-document.getElementById('submitBtn').onclick = () => {
-    if(!confirm("시험을 종료할까요?")) return;
-    
-    let score = 0;
-    currentExamQuestions.forEach((q, idx) => {
-        if (userAnswers[idx] === q.answer) score++;
-    });
-
-    document.getElementById('exam-screen').classList.add('hidden');
-    document.getElementById('result-screen').classList.remove('hidden');
-    document.getElementById('score').innerText = `결과: ${currentExamQuestions.length}점 만점에 ${score}점입니다.`;
-};
+/* 문제 화면 보기 선택 시 */
+#options li.selected {
+    background-color: #3498db !important;
+    color: white !important;
+    border-color: #2980b9 !important;
+}
