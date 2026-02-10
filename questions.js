@@ -5422,11 +5422,13 @@ const generateQuestions = () => {
         "answer": "CloudFront 필드 레벨 암호화(Field-level encryption) 사용",
         "explanation": "필드 레벨 암호화를 사용하면 CloudFront가 공개키로 특정 필드를 암호화하며, 오직 개인키를 가진 결제 처리 서버만 이를 복호화할 수 있습니다."
     }
-];
+]; 
 
     return qList.map((q, index) => {
-        // 정답이 문자열인데 콤마(,)가 포함되어 있다면 배열로 변환 (다중 정답 처리)
+        // ★ 핵심 수정: 정답이 문자열이고 콤마(,)가 있으면 배열로 변환
         let processedAnswer = q.answer;
+        
+        // 정답이 "Option A, Option B" 처럼 문자열로 되어있으면 -> ["Option A", "Option B"] 로 변환
         if (typeof q.answer === 'string' && q.answer.includes(',')) {
             processedAnswer = q.answer.split(',').map(a => a.trim());
         }
@@ -5436,10 +5438,11 @@ const generateQuestions = () => {
             category: q.category,
             title: q.title,
             options: [...q.options].sort(() => Math.random() - 0.5), // 보기 셔플
-            answer: processedAnswer, // 변환된 정답 (문자열 또는 배열)
+            answer: processedAnswer, // 변환된 정답(배열) 적용
             explanation: q.explanation
         };
     });
 };
 
 window.questions = generateQuestions();
+
