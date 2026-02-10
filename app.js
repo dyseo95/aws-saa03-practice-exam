@@ -72,24 +72,57 @@ function startExam(practiceMode) {
     const countBtn = document.querySelector('.count-select button.active');
     const count = countBtn ? parseInt(countBtn.dataset.count) : 30;
 
-    // 문제 섞어서 추출
-    let questions = [...window.questions].sort(() => Math.random() - 0.5).slice(0, count);
+    // -----------------------------------------------------------
+    // ★ [핵심] 복수 정답 확률 높이기 로직
+    // -----------------------------------------------------------
     
-    // ★ 실전 모드(65문제)일 때 15문제를 랜덤으로 '더미(채점 제외)' 처리
+    // 1. 전체 문제를 복수형(multi)과 단일형(single)으로 분리
+    const allQuestions = window.questions;
+    const multiQuestions = allQuestions.filter(q => Array.isArray(q.answer) && q.answer.length > 1);
+    const singleQuestions = allQuestions.filter(q => !Array.isArray(q.answer) || q.answer.length <= 1);
+
+    // 2. 각각 무작위로 섞음
+    multiQuestions.sort(() => Math.random() - 0.5);
+    singleQuestions.sort(() => Math.random() - 0.5);
+
+    // 3. 비율 설정 (예: 전체의 40%는 복수 정답 문제로 채움)
+    // 데이터가 부족하면 있는 만큼만 가져옴
+    const targetMultiCount = Math.min(Math.floor(count * 0.4), multiQuestions.length);
+    const targetSingleCount = count - targetMultiCount;
+
+    // 4. 문제 합치기 (복수형 + 단일형)
+    let selectedQuestions = [
+        ...multiQuestions.slice(0, targetMultiCount),
+        ...singleQuestions.slice(0, targetSingleCount)
+    ];
+
+    // 만약 단일형 문제가 부족해서 개수가 모자라면, 남은 복수형에서 더 채움 (혹은 그 반대)
+    if (selectedQuestions.length < count) {
+        const remainingNeeded = count - selectedQuestions.length;
+        const remainingMulti = multiQuestions.slice(targetMultiCount);
+        selectedQuestions = selectedQuestions.concat(remainingMulti.slice(0, remainingNeeded));
+    }
+
+    // 5. 최종 셔플 (복수/단일 문제가 뭉쳐있지 않도록 다시 섞기)
+    selectedQuestions.sort(() => Math.random() - 0.5);
+
+    // -----------------------------------------------------------
+    // ★ 실전 모드(65문제)일 때 더미 문제(채점 제외) 로직
+    // -----------------------------------------------------------
     if (!isPracticeMode && count === 65) {
         const indices = Array.from({ length: count }, (_, i) => i);
         // 인덱스를 섞어서 앞의 15개 선택
         const dummyIndices = indices.sort(() => Math.random() - 0.5).slice(0, 15);
         
-        questions = questions.map((q, idx) => ({
+        selectedQuestions = selectedQuestions.map((q, idx) => ({
             ...q,
             isDummy: dummyIndices.includes(idx) // 더미 여부 플래그
         }));
     } else {
-        questions = questions.map(q => ({ ...q, isDummy: false }));
+        selectedQuestions = selectedQuestions.map(q => ({ ...q, isDummy: false }));
     }
 
-    currentExamQuestions = questions;
+    currentExamQuestions = selectedQuestions;
     currentIndex = 0;
     userAnswers = new Array(count).fill(null);
 
@@ -254,9 +287,9 @@ function goPrev() {
 function finishExam() {
     if (!confirm("시험을 종료하고 결과를 확인하시겠습니까?")) return;
 
-    let correctCount = 0; // 맞힌 문제 수 (전체)
-    let validCorrectCount = 0; // 맞힌 문제 수 (채점 대상)
-    let validTotalCount = 0; // 채점 대상 문제 수
+    let correctCount = 0; 
+    let validCorrectCount = 0; 
+    let validTotalCount = 0; 
     
     const stats = {};
     const wrongList = [];
@@ -276,11 +309,9 @@ function finishExam() {
             isCorrect = (myAns === q.answer);
         }
         
-        // 통계 (더미 포함 전체 통계)
         if (!stats[q.category]) stats[q.category] = { total: 0, correct: 0 };
         stats[q.category].total++;
 
-        // 채점 대상인지 확인 (더미가 아니면 카운트)
         if (!q.isDummy) {
             validTotalCount++;
         }
@@ -305,14 +336,10 @@ function finishExam() {
         }
     });
 
-    // ★ 점수 계산 (AWS 공식: 100 ~ 1000점)
-    // 무조건 기본점수 100점 + (맞힌 비율 * 900점)
+    // 점수 계산 (기본 100점 + 알파)
     let awsScore = 0;
-    
     const scoringBase = validTotalCount > 0 ? validTotalCount : currentExamQuestions.length;
     const scoringCorrect = validTotalCount > 0 ? validCorrectCount : correctCount;
-
-    // 예외 처리 없이 공식대로 계산 (0개 맞아도 100점)
     awsScore = Math.round(100 + (scoringCorrect / scoringBase) * 900);
 
     saveSession(awsScore, correctCount, currentExamQuestions.length, wrongList);
@@ -337,7 +364,6 @@ function showResult(awsScore, correctCount, total, stats, wrongList, validTotalC
     
     let detailText = `(총 ${total}문제 중 ${correctCount}문제 정답)`;
     
-    // 실전 모드일 때만 더미 문제 정보 표시
     if (total === 65 && !isPracticeMode) {
         detailText = `<span style="color:#ff3b30; font-weight:bold;">(채점 대상: ${validTotalCount}문제 / 더미 제외: 15문제)</span><br>실제 채점 정답: ${Math.round((awsScore-100)/18)}개 (추정)`;
     }
