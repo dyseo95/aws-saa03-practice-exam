@@ -5422,13 +5422,15 @@ const generateQuestions = () => {
         "answer": "CloudFront 필드 레벨 암호화(Field-level encryption) 사용",
         "explanation": "필드 레벨 암호화를 사용하면 CloudFront가 공개키로 특정 필드를 암호화하며, 오직 개인키를 가진 결제 처리 서버만 이를 복호화할 수 있습니다."
     }
-]; 
+// ... (위에는 문제 데이터들이 쭉 있습니다) ...
+    ];
 
     return qList.map((q, index) => {
-        // ★ 핵심 수정: 정답이 문자열이고 콤마(,)가 있으면 배열로 변환
+        // ★ 여기가 핵심입니다! (이 부분이 빠져있었어요)
         let processedAnswer = q.answer;
-        
-        // 정답이 "Option A, Option B" 처럼 문자열로 되어있으면 -> ["Option A", "Option B"] 로 변환
+
+        // 정답이 글자(String)인데 쉼표(,)가 포함되어 있다면 -> 배열(Array)로 변환
+        // 예: "Lambda, Macie" -> ["Lambda", "Macie"]
         if (typeof q.answer === 'string' && q.answer.includes(',')) {
             processedAnswer = q.answer.split(',').map(a => a.trim());
         }
@@ -5438,11 +5440,12 @@ const generateQuestions = () => {
             category: q.category,
             title: q.title,
             options: [...q.options].sort(() => Math.random() - 0.5), // 보기 셔플
-            answer: processedAnswer, // 변환된 정답(배열) 적용
+            answer: processedAnswer, // ★ 변환된 정답을 넣어야 합니다
             explanation: q.explanation
         };
     });
 };
 
 window.questions = generateQuestions();
+
 
