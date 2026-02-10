@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('checkAnswerBtn').addEventListener('click', checkAnswer);
     document.getElementById('quitBtn').addEventListener('click', finishExam);
     
-    // ★ [추가] 메인으로 나가기 버튼
+    // 메인으로 나가기 버튼 (존재 여부 확인 후 연결)
     const exitBtn = document.getElementById('exitToMainBtn');
     if(exitBtn) {
         exitBtn.addEventListener('click', () => {
@@ -70,7 +70,7 @@ function startExam(practiceMode) {
     showScreen(document.getElementById('exam-screen'));
     
     const badge = document.getElementById('mode-badge');
-    // ★ 65문제(실전) 모드일 때 뱃지 표시 변경
+    // 65문제(실전) 모드일 때 뱃지 표시 변경
     if (!isPracticeMode && count === 65) {
         badge.innerText = "🔥 실전 시험";
         badge.className = "badge real-badge";
@@ -276,19 +276,18 @@ function showResult(score, stats, wrongList) {
     showScreen(document.getElementById('result-screen'));
     const total = currentExamQuestions.length;
     
-    // ★ 합격/불합격 판정 (65문제 실전 모드일 때만)
     const scoreElement = document.getElementById('score');
     scoreElement.innerHTML = ''; 
 
-    // 점수 텍스트
+    // 점수 표시
     const myScore = Math.round((score / total) * 100);
     const scoreText = document.createElement('div');
     scoreText.innerHTML = `총 ${total}문제 중 <strong style="color:#007aff; font-size:1.2em;">${score}문제</strong>를 맞혔습니다!<br>(점수: ${myScore}점)`;
     scoreElement.appendChild(scoreText);
 
-    // 합격 배지 (72점 이상)
+    // 65문제 실전 모드일 때 합격/불합격 판정
     if (total === 65 && !isPracticeMode) {
-        const passScore = 72;
+        const passScore = 72; // AWS 기준 720점(72%)
         const badge = document.createElement('div');
         
         if (myScore >= passScore) {
@@ -332,7 +331,7 @@ function saveSession(score, total, wrongList) {
     const newSession = {
         id: Date.now(),
         round: sessions.length + 1,
-        mode: isPracticeMode ? '연습' : (total === 65 ? '실전' : '테스트'), // 65문제일 때 '실전' 기록
+        mode: isPracticeMode ? '연습' : (total === 65 ? '실전' : '테스트'),
         date: new Date().toLocaleString(),
         score: `${score} / ${total}`,
         wrongList: wrongList
@@ -341,7 +340,6 @@ function saveSession(score, total, wrongList) {
     localStorage.setItem('aws_exam_sessions', JSON.stringify(sessions));
 }
 
-// 화면 전환 및 기타 유틸리티 함수들
 function showHistoryList() {
     showScreen(document.getElementById('history-screen'));
     const sessions = JSON.parse(localStorage.getItem('aws_exam_sessions')) || [];
