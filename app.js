@@ -1,11 +1,12 @@
 let currentExamQuestions = [];
 let currentIndex = 0;
-let userAnswers = []; // 사용자가 선택한 답 (단일값 또는 배열)
+let userAnswers = []; 
 let isPracticeMode = false;
 let currentSessionData = null;
 
-// 초기화
+// 초기화 및 이벤트 연결
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. 문제 수 선택
     const countBtns = document.querySelectorAll('.count-select button');
     countBtns.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -14,19 +15,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // 2. 메인 화면 버튼
     document.getElementById('startExamBtn').addEventListener('click', () => startExam(false));
     document.getElementById('startPracticeBtn').addEventListener('click', () => startExam(true));
     document.getElementById('historyBtn').addEventListener('click', showHistoryList);
     
+    // 3. 시험 화면 버튼
     document.getElementById('prevBtn').addEventListener('click', goPrev);
     document.getElementById('nextBtn').addEventListener('click', goNext);
     document.getElementById('checkAnswerBtn').addEventListener('click', checkAnswer);
     document.getElementById('quitBtn').addEventListener('click', finishExam);
 
+    // 4. 결과 및 오답노트 버튼
     document.getElementById('restartBtn').addEventListener('click', () => location.reload());
-    document.getElementById('backToStartBtn').addEventListener('click', showMainScreen);
-    document.getElementById('clearHistoryBtn').addEventListener('click', clearAllHistory);
-    document.getElementById('backToHistoryBtn').addEventListener('click', showHistoryList);
+    
+    // ★ 이 부분이 수정되었습니다 (함수 연결 확실하게)
+    const backStartBtn = document.getElementById('backToStartBtn');
+    if(backStartBtn) backStartBtn.addEventListener('click', showMainScreen);
+
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+    if(clearHistoryBtn) clearHistoryBtn.addEventListener('click', clearAllHistory);
+
+    const backHistoryBtn = document.getElementById('backToHistoryBtn');
+    if(backHistoryBtn) backHistoryBtn.addEventListener('click', showHistoryList);
     
     const downloadBtn = document.getElementById('downloadTxtBtn');
     if (downloadBtn) {
@@ -36,11 +47,110 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// --- 화면 전환 함수들 (누락되었던 부분 복구) ---
+function showScreen(screenElement) {
+    // 모든 섹션 숨기기
+    const screens = document.querySelectorAll('#app > section');
+    screens.forEach(s => s.classList.add('hidden'));
+    // 타겟 섹션 보이기
+    screenElement.classList.remove('hidden');
+}
+
+function showMainScreen() {
+    showScreen(document.getElementById('start-screen'));
+}
+
+// --- 오답노트 관리 함수들 ---
+function showHistoryList() {
+    showScreen(document.getElementById('history-screen'));
+    
+    const sessions = JSON.parse(localStorage.getItem('aws_exam_sessions')) || [];
+    const container = document.getElementById('history-sessions');
+    container.innerHTML = '';
+
+    if (sessions.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">저장된 기록이 없습니다.</p>';
+        return;
+    }
+
+    sessions.forEach(session => {
+        const item = document.createElement('div');
+        item.className = 'session-item';
+        
+        // 항목 클릭 시 상세 보기
+        item.onclick = (e) => {
+            // 삭제 버튼을 눌렀을 때는 상세로 이동하지 않음
+            if (!e.target.classList.contains('btn-delete-session')) {
+                showHistoryDetail(session);
+            }
+        };
+
+        item.innerHTML = `
+            <div class="session-info">
+                <span class="session-title">[${session.mode}] ${session.round}회차 (${session.date})</span>
+            </div>
+            <div class="session-right">
+                <span class="session-score">${session.score}</span>
+                <button class="btn-delete-session" data-id="${session.id}" title="삭제">🗑️</button>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+
+    // 개별 삭제 버튼 이벤트 바인딩
+    document.querySelectorAll('.btn-delete-session').forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation(); // 부모 클릭 이벤트 전파 방지
+            const id = Number(e.target.dataset.id);
+            deleteSession(id);
+        };
+    });
+}
+
+function deleteSession(id) {
+    if (!confirm("정말 이 기록을 삭제하시겠습니까?")) return;
+    let sessions = JSON.parse(localStorage.getItem('aws_exam_sessions')) || [];
+    sessions = sessions.filter(s => s.id !== id);
+    localStorage.setItem('aws_exam_sessions', JSON.stringify(sessions));
+    showHistoryList(); // 목록 갱신
+}
+
+function clearAllHistory() {
+    if(confirm('모든 기록을 영구적으로 삭제하시겠습니까?')) {
+        localStorage.removeItem('aws_exam_sessions');
+        showHistoryList();
+    }
+}
+
+function showHistoryDetail(session) {
+    currentSessionData = session;
+    showScreen(document.getElementById('history-detail-screen'));
+    document.getElementById('detail-title').innerText = `${session.round}회차 오답 노트`;
+    
+    const container = document.getElementById('history-detail-list');
+    container.innerHTML = '';
+    
+    session.wrongList.forEach(w => {
+        const div = document.createElement('div');
+        div.className = 'wrong-item';
+        div.innerHTML = `
+            <div class="wrong-title"><span style="color:#007aff;">[${w.category}]</span> ${w.title}</div>
+            <div class="wrong-detail" style="color:#ff4d4f;">❌ 내 선택: ${w.user}</div>
+            <div class="wrong-detail" style="color:#28a745;">✅ 정답: ${w.correct}</div>
+            <div class="wrong-exp">💡 ${w.exp}</div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// --- 시험 로직 함수들 ---
+
 function startExam(practiceMode) {
-    if (!window.questions || window.questions.length === 0) return alert("문제 데이터 오류!");
+    if (!window.questions || window.questions.length === 0) return alert("문제 데이터 오류! questions.js를 확인하세요.");
 
     isPracticeMode = practiceMode;
-    const count = parseInt(document.querySelector('.count-select button.active').dataset.count);
+    const countBtn = document.querySelector('.count-select button.active');
+    const count = countBtn ? parseInt(countBtn.dataset.count) : 30;
 
     currentExamQuestions = [...window.questions].sort(() => Math.random() - 0.5).slice(0, count);
     currentIndex = 0;
@@ -57,7 +167,7 @@ function startExam(practiceMode) {
 
 function renderQuestion() {
     const q = currentExamQuestions[currentIndex];
-    const isMulti = Array.isArray(q.answer) && q.answer.length > 1; // 다중 정답 여부 확인
+    const isMulti = Array.isArray(q.answer) && q.answer.length > 1;
     
     document.getElementById('progress').innerText = `문제 ${currentIndex + 1} / ${currentExamQuestions.length}`;
     
@@ -74,7 +184,7 @@ function renderQuestion() {
     optionsList.innerHTML = '';
 
     let currentAns = userAnswers[currentIndex];
-    if (isMulti && !currentAns) currentAns = []; // 다중 선택 초기화
+    if (isMulti && !currentAns) currentAns = [];
 
     q.options.forEach(opt => {
         const li = document.createElement('li');
@@ -93,16 +203,14 @@ function renderQuestion() {
     document.getElementById('prevBtn').style.visibility = currentIndex === 0 ? 'hidden' : 'visible';
     
     if (isPracticeMode) {
-        // 정답 확인 여부 체크 (UI 클래스로 확인)
         const isChecked = document.querySelector('.practice-correct') || document.querySelector('.practice-wrong');
         
-        // 답을 선택했고 아직 확인 안 했으면 '정답 확인' 버튼 표시
         if ((isMulti ? currentAns.length > 0 : currentAns) && !isChecked) { 
              document.getElementById('checkAnswerBtn').classList.remove('hidden');
              nextBtn.classList.add('hidden');
-        } else if (isChecked) { // 확인했으면 '다음' 버튼
+        } else if (isChecked) {
              nextBtn.classList.remove('hidden');
-        } else { // 선택 안 했으면 둘 다 숨김 (선택 시 표시됨)
+        } else {
              document.getElementById('checkAnswerBtn').classList.remove('hidden');
              nextBtn.classList.add('hidden');
         }
@@ -120,7 +228,6 @@ function selectOption(liElement, opt, isMulti) {
             ansArray = ansArray.filter(a => a !== opt);
             liElement.classList.remove('selected');
         } else {
-            // 정답 개수 제한 (선택적으로 해제 가능)
             const q = currentExamQuestions[currentIndex];
             if (ansArray.length >= q.answer.length) {
                 alert(`최대 ${q.answer.length}개까지만 선택할 수 있습니다.`);
@@ -151,7 +258,6 @@ function checkAnswer() {
     let isCorrect = false;
 
     if (isMulti) {
-        // 배열 내용 비교 (정렬 후 문자열 변환 비교)
         const sortedMyAns = [...myAns].sort().toString();
         const sortedCorrect = [...q.answer].sort().toString();
         isCorrect = (sortedMyAns === sortedCorrect);
@@ -291,93 +397,6 @@ function saveSession(score, total, wrongList) {
     };
     sessions.unshift(newSession);
     localStorage.setItem('aws_exam_sessions', JSON.stringify(sessions));
-}
-
-function showHistoryList() {
-    showScreen(document.getElementById('history-screen'));
-    const sessions = JSON.parse(localStorage.getItem('aws_exam_sessions')) || [];
-    const container = document.getElementById('history-sessions');
-    container.innerHTML = '';
-
-    if (sessions.length === 0) {
-        container.innerHTML = '<p style="text-align:center; color:#666; padding:20px;">저장된 기록이 없습니다.</p>';
-        return;
-    }
-
-    sessions.forEach(session => {
-        const item = document.createElement('div');
-        item.className = 'session-item';
-        
-        // 클릭하면 상세 보기 (삭제 버튼 제외)
-        item.onclick = (e) => {
-            if (!e.target.classList.contains('btn-delete-session')) {
-                showHistoryDetail(session);
-            }
-        };
-
-        item.innerHTML = `
-            <div class="session-info">
-                <span class="session-title">[${session.mode}] ${session.round}회차 (${session.date})</span>
-            </div>
-            <div class="session-right">
-                <span class="session-score">${session.score}</span>
-                <button class="btn-delete-session" data-id="${session.id}">🗑️</button>
-            </div>
-        `;
-        
-        container.appendChild(item);
-    });
-
-    // 개별 삭제 버튼 이벤트 연결
-    document.querySelectorAll('.btn-delete-session').forEach(btn => {
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            const id = Number(e.target.dataset.id);
-            deleteSession(id);
-        };
-    });
-}
-
-function deleteSession(id) {
-    if (!confirm("정말 이 기록을 삭제하시겠습니까?")) return;
-    let sessions = JSON.parse(localStorage.getItem('aws_exam_sessions')) || [];
-    sessions = sessions.filter(s => s.id !== id);
-    localStorage.setItem('aws_exam_sessions', JSON.stringify(sessions));
-    showHistoryList();
-}
-
-function clearAllHistory() {
-    if(confirm('모든 기록을 삭제하시겠습니까?')) {
-        localStorage.removeItem('aws_exam_sessions');
-        showHistoryList();
-    }
-}
-
-function showHistoryDetail(session) {
-    currentSessionData = session;
-    showScreen(document.getElementById('history-detail-screen'));
-    document.getElementById('detail-title').innerText = `${session.round}회차 오답 노트`;
-    
-    const container = document.getElementById('history-detail-list');
-    container.innerHTML = '';
-    
-    session.wrongList.forEach(w => {
-        const div = document.createElement('div');
-        div.className = 'wrong-item';
-        div.innerHTML = `
-            <div class="wrong-title"><span style="color:#007aff;">[${w.category}]</span> ${w.title}</div>
-            <div class="wrong-detail" style="color:#ff4d4f;">❌ 내 선택: ${w.user}</div>
-            <div class="wrong-detail" style="color:#28a745;">✅ 정답: ${w.correct}</div>
-            <div class="wrong-exp">💡 ${w.exp}</div>
-        `;
-        container.appendChild(div);
-    });
-}
-
-function showScreen(screen) {
-    const screens = document.querySelectorAll('#app > section');
-    screens.forEach(s => s.classList.add('hidden'));
-    screen.classList.remove('hidden');
 }
 
 function downloadTxt(session) {
