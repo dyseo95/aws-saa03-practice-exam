@@ -207,6 +207,39 @@ button:hover { opacity: 0.9; }
 /* 연습모드/실전모드 뱃지 스타일 */
 .real-badge { background-color: #e7f5ff; color: #0056b3; }
 .practice-badge { background-color: #e8f5e9; color: #2e7d32; }
+
+  /* 오답노트 리스트 레이아웃 수정 */
+.session-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.session-right {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* 점수와 삭제버튼 사이 간격 */
+}
+
+/* 개별 삭제 버튼 (휴지통) */
+.btn-delete-session {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background 0.2s;
+    line-height: 1;
+    color: #666;
+}
+
+.btn-delete-session:hover {
+    background-color: #ffe5e5; /* 연한 빨강 배경 */
+    color: #ff3b30;
+}
   
 }
+
 
