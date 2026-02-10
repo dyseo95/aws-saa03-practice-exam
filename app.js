@@ -1,3 +1,4 @@
+console.log("App.js 로드 성공!"); alert("준비 완료!");
 let currentExamQuestions = [];
 let currentIndex = 0;
 let userAnswers = [];
@@ -439,3 +440,4 @@ function downloadTxt(session) {
     a.download = `오답노트_${session.round}회차.txt`;
     a.click();
 }
+
