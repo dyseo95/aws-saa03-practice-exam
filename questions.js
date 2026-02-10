@@ -5424,14 +5424,22 @@ const generateQuestions = () => {
     }
 ];
 
-    return qList.map((q, index) => ({
-        id: index + 1,
-        category: q.category,
-        title: q.title,
-        options: [...q.options].sort(() => Math.random() - 0.5),
-        answer: q.answer,
-        explanation: q.explanation
-    }));
+    return qList.map((q, index) => {
+        // 정답이 문자열인데 콤마(,)가 포함되어 있다면 배열로 변환 (다중 정답 처리)
+        let processedAnswer = q.answer;
+        if (typeof q.answer === 'string' && q.answer.includes(',')) {
+            processedAnswer = q.answer.split(',').map(a => a.trim());
+        }
+
+        return {
+            id: index + 1,
+            category: q.category,
+            title: q.title,
+            options: [...q.options].sort(() => Math.random() - 0.5), // 보기 셔플
+            answer: processedAnswer, // 변환된 정답 (문자열 또는 배열)
+            explanation: q.explanation
+        };
+    });
 };
 
 window.questions = generateQuestions();
