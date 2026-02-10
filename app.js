@@ -6,7 +6,6 @@ let currentSessionData = null;
 
 // 초기화
 document.addEventListener('DOMContentLoaded', () => {
-    // 문제 수 선택
     const countBtns = document.querySelectorAll('.count-select button');
     countBtns.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -15,18 +14,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 메인 버튼
     document.getElementById('startExamBtn').addEventListener('click', () => startExam(false));
     document.getElementById('startPracticeBtn').addEventListener('click', () => startExam(true));
     document.getElementById('historyBtn').addEventListener('click', showHistoryList);
     
-    // 시험 네비게이션
     document.getElementById('prevBtn').addEventListener('click', goPrev);
     document.getElementById('nextBtn').addEventListener('click', goNext);
     document.getElementById('checkAnswerBtn').addEventListener('click', checkAnswer);
     document.getElementById('quitBtn').addEventListener('click', finishExam);
 
-    // 결과/오답노트 버튼
     document.getElementById('restartBtn').addEventListener('click', () => location.reload());
     document.getElementById('backToStartBtn').addEventListener('click', showMainScreen);
     document.getElementById('clearHistoryBtn').addEventListener('click', clearAllHistory);
@@ -40,7 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// 1. 시험 시작
 function startExam(practiceMode) {
     if (!window.questions || window.questions.length === 0) return alert("문제 데이터 오류!");
 
@@ -60,20 +55,16 @@ function startExam(practiceMode) {
     renderQuestion();
 }
 
-// 2. 문제 렌더링 (다중 선택 UI 지원)
 function renderQuestion() {
     const q = currentExamQuestions[currentIndex];
-    // 정답이 배열이면 다중 선택 문제
-    const isMulti = Array.isArray(q.answer) && q.answer.length > 1;
+    const isMulti = Array.isArray(q.answer) && q.answer.length > 1; // 다중 정답 여부 확인
     
     document.getElementById('progress').innerText = `문제 ${currentIndex + 1} / ${currentExamQuestions.length}`;
     
-    // 문제 제목에 (N개 선택) 표시
     let titleText = q.title;
-    if (isMulti) titleText += ` <span style="color:#ff3b30; font-size:0.9em;">(${q.answer.length}개 선택)</span>`;
+    if (isMulti) titleText += ` <span style="color:#ff3b30; font-weight:bold; font-size:0.9em;">(${q.answer.length}개 선택)</span>`;
     document.getElementById('question-title').innerHTML = titleText;
 
-    // 초기화
     document.getElementById('practice-feedback').classList.add('hidden');
     document.getElementById('checkAnswerBtn').classList.add('hidden');
     const nextBtn = document.getElementById('nextBtn');
@@ -82,16 +73,13 @@ function renderQuestion() {
     const optionsList = document.getElementById('options');
     optionsList.innerHTML = '';
 
-    // 현재 저장된 사용자 답안 가져오기
     let currentAns = userAnswers[currentIndex];
-    // 다중 선택인데 답이 없으면 빈 배열로 초기화
-    if (isMulti && !currentAns) currentAns = [];
+    if (isMulti && !currentAns) currentAns = []; // 다중 선택 초기화
 
     q.options.forEach(opt => {
         const li = document.createElement('li');
         li.innerText = opt;
         
-        // 선택 상태 표시 (단일 vs 다중)
         if (isMulti) {
             if (currentAns.includes(opt)) li.classList.add('selected');
         } else {
@@ -104,16 +92,17 @@ function renderQuestion() {
 
     document.getElementById('prevBtn').style.visibility = currentIndex === 0 ? 'hidden' : 'visible';
     
-    // 연습모드 버튼 제어
     if (isPracticeMode) {
-        // 이미 푼 문제(정답 확인됨)인지 체크
+        // 정답 확인 여부 체크 (UI 클래스로 확인)
         const isChecked = document.querySelector('.practice-correct') || document.querySelector('.practice-wrong');
-        if (userAnswers[currentIndex] && !isChecked) { 
+        
+        // 답을 선택했고 아직 확인 안 했으면 '정답 확인' 버튼 표시
+        if ((isMulti ? currentAns.length > 0 : currentAns) && !isChecked) { 
              document.getElementById('checkAnswerBtn').classList.remove('hidden');
              nextBtn.classList.add('hidden');
-        } else if (isChecked) {
+        } else if (isChecked) { // 확인했으면 '다음' 버튼
              nextBtn.classList.remove('hidden');
-        } else {
+        } else { // 선택 안 했으면 둘 다 숨김 (선택 시 표시됨)
              document.getElementById('checkAnswerBtn').classList.remove('hidden');
              nextBtn.classList.add('hidden');
         }
@@ -122,31 +111,32 @@ function renderQuestion() {
     }
 }
 
-// 3. 보기 선택 로직 (다중 선택 지원)
 function selectOption(liElement, opt, isMulti) {
     if (isPracticeMode && !document.getElementById('practice-feedback').classList.contains('hidden')) return;
 
     if (isMulti) {
-        // 다중 선택: 배열에 추가/삭제 (Toggle)
         let ansArray = userAnswers[currentIndex] || [];
-        
         if (ansArray.includes(opt)) {
-            ansArray = ansArray.filter(a => a !== opt); // 선택 해제
+            ansArray = ansArray.filter(a => a !== opt);
             liElement.classList.remove('selected');
         } else {
-            ansArray.push(opt); // 선택 추가
+            // 정답 개수 제한 (선택적으로 해제 가능)
+            const q = currentExamQuestions[currentIndex];
+            if (ansArray.length >= q.answer.length) {
+                alert(`최대 ${q.answer.length}개까지만 선택할 수 있습니다.`);
+                return;
+            }
+            ansArray.push(opt);
             liElement.classList.add('selected');
         }
         userAnswers[currentIndex] = ansArray;
     } else {
-        // 단일 선택
         userAnswers[currentIndex] = opt;
         document.querySelectorAll('#options li').forEach(el => el.classList.remove('selected'));
         liElement.classList.add('selected');
     }
 }
 
-// 4. 정답 확인 (연습 모드)
 function checkAnswer() {
     const q = currentExamQuestions[currentIndex];
     const myAns = userAnswers[currentIndex];
@@ -161,15 +151,15 @@ function checkAnswer() {
     let isCorrect = false;
 
     if (isMulti) {
-        // 배열 비교 (순서 무관하게 정렬 후 문자열 비교)
+        // 배열 내용 비교 (정렬 후 문자열 변환 비교)
         const sortedMyAns = [...myAns].sort().toString();
         const sortedCorrect = [...q.answer].sort().toString();
         isCorrect = (sortedMyAns === sortedCorrect);
 
         options.forEach(li => {
             const txt = li.innerText;
-            if (q.answer.includes(txt)) li.classList.add('practice-correct'); // 정답 표시
-            if (myAns.includes(txt) && !q.answer.includes(txt)) li.classList.add('practice-wrong'); // 내가 틀린 것
+            if (q.answer.includes(txt)) li.classList.add('practice-correct');
+            if (myAns.includes(txt) && !q.answer.includes(txt)) li.classList.add('practice-wrong');
         });
     } else {
         isCorrect = (myAns === q.answer);
@@ -213,7 +203,6 @@ function goPrev() {
     }
 }
 
-// 5. 시험 종료 및 채점
 function finishExam() {
     if (!confirm("시험을 종료하고 결과를 확인하시겠습니까?")) return;
 
@@ -227,7 +216,6 @@ function finishExam() {
         let isCorrect = false;
 
         if (isMulti) {
-            // 다중 정답 비교
             if (myAns && Array.isArray(myAns)) {
                 const sortedMy = [...myAns].sort().toString();
                 const sortedAns = [...q.answer].sort().toString();
@@ -237,7 +225,6 @@ function finishExam() {
             isCorrect = (myAns === q.answer);
         }
         
-        // 통계
         if (!stats[q.category]) stats[q.category] = { total: 0, correct: 0 };
         stats[q.category].total++;
 
@@ -245,7 +232,6 @@ function finishExam() {
             score++;
             stats[q.category].correct++;
         } else {
-            // 오답 노트 데이터 구성
             let userStr = isMulti ? (myAns ? myAns.join(", ") : "미선택") : (myAns || "미선택");
             let ansStr = isMulti ? q.answer.join(", ") : q.answer;
 
@@ -263,7 +249,6 @@ function finishExam() {
     showResult(score, stats, wrongList);
 }
 
-// 6. 결과 화면
 function showResult(score, stats, wrongList) {
     showScreen(document.getElementById('result-screen'));
     document.getElementById('score').innerText = `총 ${currentExamQuestions.length}문제 중 ${score}문제를 맞혔습니다!`;
@@ -294,11 +279,10 @@ function showResult(score, stats, wrongList) {
     }
 }
 
-// 7. 데이터 저장
 function saveSession(score, total, wrongList) {
     const sessions = JSON.parse(localStorage.getItem('aws_exam_sessions')) || [];
     const newSession = {
-        id: Date.now(), // 고유 ID (삭제 시 사용)
+        id: Date.now(),
         round: sessions.length + 1,
         mode: isPracticeMode ? '연습' : '실전',
         date: new Date().toLocaleString(),
@@ -309,7 +293,6 @@ function saveSession(score, total, wrongList) {
     localStorage.setItem('aws_exam_sessions', JSON.stringify(sessions));
 }
 
-// 8. 오답노트 목록 & 개별 삭제 기능
 function showHistoryList() {
     showScreen(document.getElementById('history-screen'));
     const sessions = JSON.parse(localStorage.getItem('aws_exam_sessions')) || [];
@@ -325,12 +308,13 @@ function showHistoryList() {
         const item = document.createElement('div');
         item.className = 'session-item';
         
-        // 클릭하면 상세 보기
+        // 클릭하면 상세 보기 (삭제 버튼 제외)
         item.onclick = (e) => {
-            showHistoryDetail(session);
+            if (!e.target.classList.contains('btn-delete-session')) {
+                showHistoryDetail(session);
+            }
         };
 
-        // 내용 구성 (삭제 버튼 포함)
         item.innerHTML = `
             <div class="session-info">
                 <span class="session-title">[${session.mode}] ${session.round}회차 (${session.date})</span>
@@ -344,25 +328,22 @@ function showHistoryList() {
         container.appendChild(item);
     });
 
-    // 삭제 버튼 이벤트 리스너 (이벤트 버블링 방지)
+    // 개별 삭제 버튼 이벤트 연결
     document.querySelectorAll('.btn-delete-session').forEach(btn => {
         btn.onclick = (e) => {
-            e.stopPropagation(); // 부모(item)의 클릭 이벤트 방지
+            e.stopPropagation();
             const id = Number(e.target.dataset.id);
             deleteSession(id);
         };
     });
 }
 
-// 9. 개별 세션 삭제
 function deleteSession(id) {
     if (!confirm("정말 이 기록을 삭제하시겠습니까?")) return;
-
     let sessions = JSON.parse(localStorage.getItem('aws_exam_sessions')) || [];
     sessions = sessions.filter(s => s.id !== id);
     localStorage.setItem('aws_exam_sessions', JSON.stringify(sessions));
-    
-    showHistoryList(); // 목록 갱신
+    showHistoryList();
 }
 
 function clearAllHistory() {
