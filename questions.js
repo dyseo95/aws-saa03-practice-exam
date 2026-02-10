@@ -5428,27 +5428,32 @@ const generateQuestions = () => {
     // ▼▼▼ 여기서부터 끝까지 이 코드로 덮어쓰세요 ▼▼▼
     ]; 
 
-    return qList.map((q, index) => {
-        let processedAnswer = q.answer;
+   return qList.map((q, index) => {
+    let processedAnswer;
 
-        // ★ 핵심: 정답이 문자열이고 쉼표(,)가 있으면 배열로 변환
-        if (typeof q.answer === 'string' && q.answer.includes(',')) {
-            processedAnswer = q.answer
-                .split(',')
-                .map(a => a.trim());
-        }
+    // ✅ 1. 이미 배열이면 그대로 사용
+    if (Array.isArray(q.answer)) {
+        processedAnswer = q.answer.map(a => a.trim());
 
-        return {
-            id: index + 1,
-            category: q.category,
-            title: q.title,
-            options: [...q.options].sort(() => Math.random() - 0.5), // 보기 셔플
-            answer: processedAnswer, // 배열로 변환된 정답 적용
-            explanation: q.explanation,
-            multi: Array.isArray(processedAnswer) // ⭐ 추가하신 유용한 플래그
-        };
+    // ✅ 2. 문자열이면 무조건 배열로 변환
+    } else if (typeof q.answer === 'string') {
+        processedAnswer = q.answer.includes(',')
+            ? q.answer.split(',').map(a => a.trim())
+            : [q.answer.trim()];
+    }
+
+    return {
+        id: index + 1,
+        category: q.category,
+        title: q.title,
+        options: [...q.options].sort(() => Math.random() - 0.5),
+        answer: processedAnswer,          // ⭐ 항상 배열
+        explanation: q.explanation,
+        multi: processedAnswer.length > 1 // ⭐ 복수정답 플래그
+    };
     });
 };
 
 window.questions = generateQuestions();
+
 
