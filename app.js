@@ -5,11 +5,11 @@ let isPracticeMode = false;
 let currentSessionData = null;
 
 // ==========================================
-// 1. 초기화 및 이벤트 리스너 등록
+// 1. 초기화 및 이벤트 리스너
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
     
-    // [1] 문제 수 선택 버튼
+    // [1] 문제 수 선택
     const countBtns = document.querySelectorAll('.count-select button');
     countBtns.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // [2] 메인 화면 버튼
+    // [2] 메인 버튼
     document.getElementById('startExamBtn').addEventListener('click', () => startExam(false));
     document.getElementById('startPracticeBtn').addEventListener('click', () => startExam(true));
     document.getElementById('historyBtn').addEventListener('click', showHistoryList);
@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('checkAnswerBtn').addEventListener('click', checkAnswer);
     document.getElementById('quitBtn').addEventListener('click', finishExam);
     
-    // 메인으로 나가기 버튼
+    // 메인으로 나가기
     const exitBtn = document.getElementById('exitToMainBtn');
     if (exitBtn) {
         exitBtn.addEventListener('click', () => {
@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // [4] 결과 화면 버튼
     document.getElementById('restartBtn').addEventListener('click', () => location.reload());
     
-    // [5] 오답노트 관련 버튼
+    // [5] 오답노트 관련
     const backStartBtn = document.getElementById('backToStartBtn');
     if (backStartBtn) backStartBtn.addEventListener('click', showMainScreen);
 
@@ -62,17 +62,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // ==========================================
-// 2. 시험 로직 함수들
+// 2. 시험 로직
 // ==========================================
 
 function startExam(practiceMode) {
-    if (!window.questions || window.questions.length === 0) return alert("문제 데이터 오류! questions.js를 확인하세요.");
+    if (!window.questions || window.questions.length === 0) return alert("문제 데이터 오류!");
 
     isPracticeMode = practiceMode;
     const countBtn = document.querySelector('.count-select button.active');
     const count = countBtn ? parseInt(countBtn.dataset.count) : 30;
 
-    currentExamQuestions = [...window.questions].sort(() => Math.random() - 0.5).slice(0, count);
+    // 문제 섞어서 추출
+    let questions = [...window.questions].sort(() => Math.random() - 0.5).slice(0, count);
+    
+    // ★ 실전 모드(65문제)일 때 15문제를 랜덤으로 '더미(채점 제외)' 처리
+    if (!isPracticeMode && count === 65) {
+        const indices = Array.from({ length: count }, (_, i) => i);
+        // 인덱스를 섞어서 앞의 15개 선택
+        const dummyIndices = indices.sort(() => Math.random() - 0.5).slice(0, 15);
+        
+        questions = questions.map((q, idx) => ({
+            ...q,
+            isDummy: dummyIndices.includes(idx) // 더미 여부 플래그
+        }));
+    } else {
+        questions = questions.map(q => ({ ...q, isDummy: false }));
+    }
+
+    currentExamQuestions = questions;
     currentIndex = 0;
     userAnswers = new Array(count).fill(null);
 
@@ -80,7 +97,7 @@ function startExam(practiceMode) {
     
     const badge = document.getElementById('mode-badge');
     if (!isPracticeMode && count === 65) {
-        badge.innerText = "🔥 실전 시험";
+        badge.innerText = "🔥 실전 시뮬레이션";
         badge.className = "badge real-badge";
     } else {
         badge.innerText = isPracticeMode ? "🎓 연습 모드" : "📝 테스트";
@@ -237,7 +254,10 @@ function goPrev() {
 function finishExam() {
     if (!confirm("시험을 종료하고 결과를 확인하시겠습니까?")) return;
 
-    let correctCount = 0;
+    let correctCount = 0; // 맞힌 문제 수 (전체)
+    let validCorrectCount = 0; // 맞힌 문제 수 (채점 대상)
+    let validTotalCount = 0; // 채점 대상 문제 수
+    
     const stats = {};
     const wrongList = [];
 
@@ -256,12 +276,20 @@ function finishExam() {
             isCorrect = (myAns === q.answer);
         }
         
+        // 통계 (더미 포함 전체 통계)
         if (!stats[q.category]) stats[q.category] = { total: 0, correct: 0 };
         stats[q.category].total++;
+
+        // 채점 대상인지 확인 (더미가 아니면 카운트)
+        if (!q.isDummy) {
+            validTotalCount++;
+        }
 
         if (isCorrect) {
             correctCount++;
             stats[q.category].correct++;
+            
+            if (!q.isDummy) validCorrectCount++;
         } else {
             let userStr = isMulti ? (myAns ? myAns.join(", ") : "미선택") : (myAns || "미선택");
             let ansStr = isMulti ? q.answer.join(", ") : q.answer;
@@ -271,44 +299,55 @@ function finishExam() {
                 category: q.category,
                 user: userStr,
                 correct: ansStr,
-                exp: q.explanation
+                exp: q.explanation,
+                isDummy: q.isDummy
             });
         }
     });
 
-    // ★ 실제 AWS 점수 계산 로직 (100 ~ 1000점)
-    // 기본점수 100점 + (맞은개수 / 전체개수) * 900점
-    const totalQuestions = currentExamQuestions.length;
-    const awsScore = Math.round(100 + (correctCount / totalQuestions) * 900);
+    // ★ 점수 계산 (AWS 공식: 100 ~ 1000점)
+    // 무조건 기본점수 100점 + (맞힌 비율 * 900점)
+    let awsScore = 0;
+    
+    const scoringBase = validTotalCount > 0 ? validTotalCount : currentExamQuestions.length;
+    const scoringCorrect = validTotalCount > 0 ? validCorrectCount : correctCount;
 
-    saveSession(awsScore, correctCount, totalQuestions, wrongList);
-    showResult(awsScore, correctCount, totalQuestions, stats, wrongList);
+    // 예외 처리 없이 공식대로 계산 (0개 맞아도 100점)
+    awsScore = Math.round(100 + (scoringCorrect / scoringBase) * 900);
+
+    saveSession(awsScore, correctCount, currentExamQuestions.length, wrongList);
+    showResult(awsScore, correctCount, currentExamQuestions.length, stats, wrongList, validTotalCount);
 }
 
 
 // ==========================================
-// 3. 결과 및 오답노트 관리
+// 3. 결과 및 오답노트
 // ==========================================
 
-function showResult(awsScore, correctCount, total, stats, wrongList) {
+function showResult(awsScore, correctCount, total, stats, wrongList, validTotalCount) {
     showScreen(document.getElementById('result-screen'));
     
     const scoreElement = document.getElementById('score');
     scoreElement.innerHTML = ''; 
 
-    // 점수 표시 (AWS 점수 기준)
     const scoreText = document.createElement('div');
-    scoreText.style.fontSize = "1.1rem";
-    scoreText.style.color = "#333";
+    scoreText.style.fontSize = "1.0rem";
+    scoreText.style.color = "#555";
     scoreText.style.marginBottom = "20px";
     
+    let detailText = `(총 ${total}문제 중 ${correctCount}문제 정답)`;
+    
+    // 실전 모드일 때만 더미 문제 정보 표시
+    if (total === 65 && !isPracticeMode) {
+        detailText = `<span style="color:#ff3b30; font-weight:bold;">(채점 대상: ${validTotalCount}문제 / 더미 제외: 15문제)</span><br>실제 채점 정답: ${Math.round((awsScore-100)/18)}개 (추정)`;
+    }
+
     scoreText.innerHTML = `
-        <div style="font-size: 2.5rem; color:#007aff; font-weight:800; margin-bottom:10px;">${awsScore}점</div>
-        <div style="color:#666;">(총 ${total}문제 중 ${correctCount}문제 정답)</div>
+        <div style="font-size: 2.8rem; color:#007aff; font-weight:800; margin-bottom:10px;">${awsScore}점</div>
+        <div style="line-height:1.5;">${detailText}</div>
     `;
     scoreElement.appendChild(scoreText);
 
-    // ★ 실전 모드(65문제)일 때 합격/불합격 판정 (720점 기준)
     if (total === 65 && !isPracticeMode) {
         const passScore = 720; 
         const badge = document.createElement('div');
@@ -338,8 +377,16 @@ function showResult(awsScore, correctCount, total, stats, wrongList) {
         wrongList.forEach(w => {
             const div = document.createElement('div');
             div.className = 'wrong-item';
+            
+            let dummyBadge = "";
+            if (w.isDummy) {
+                dummyBadge = `<span style="background:#eee; color:#666; font-size:0.8em; padding:2px 6px; border-radius:4px; margin-left:5px;">⚠️ 채점 제외(Dummy)</span>`;
+            }
+
             div.innerHTML = `
-                <div class="wrong-title"><span style="color:#007aff;">[${w.category}]</span> ${w.title}</div>
+                <div class="wrong-title">
+                    <span style="color:#007aff;">[${w.category}]</span> ${w.title} ${dummyBadge}
+                </div>
                 <div class="wrong-detail" style="color:#ff4d4f;">❌ 내 선택: ${w.user}</div>
                 <div class="wrong-detail" style="color:#28a745;">✅ 정답: ${w.correct}</div>
                 <div class="wrong-exp">💡 ${w.exp}</div>
@@ -356,7 +403,7 @@ function saveSession(awsScore, correctCount, total, wrongList) {
         round: sessions.length + 1,
         mode: isPracticeMode ? '연습' : (total === 65 ? '실전' : '테스트'),
         date: new Date().toLocaleString(),
-        scoreDisplay: `${awsScore}점 (${correctCount}/${total})`, // 리스트 표시용
+        scoreDisplay: `${awsScore}점`,
         score: awsScore,
         total: total,
         correct: correctCount,
@@ -387,7 +434,6 @@ function showHistoryList() {
             }
         };
 
-        // 기존 데이터 호환성 (scoreDisplay가 없는 경우 처리)
         const scoreText = session.scoreDisplay || session.score;
 
         item.innerHTML = `
@@ -437,8 +483,14 @@ function showHistoryDetail(session) {
     session.wrongList.forEach(w => {
         const div = document.createElement('div');
         div.className = 'wrong-item';
+        
+        let dummyBadge = "";
+        if (w.isDummy) {
+            dummyBadge = `<span style="background:#eee; color:#666; font-size:0.8em; padding:2px 6px; border-radius:4px; margin-left:5px;">⚠️ 채점 제외(Dummy)</span>`;
+        }
+
         div.innerHTML = `
-            <div class="wrong-title"><span style="color:#007aff;">[${w.category}]</span> ${w.title}</div>
+            <div class="wrong-title"><span style="color:#007aff;">[${w.category}]</span> ${w.title} ${dummyBadge}</div>
             <div class="wrong-detail" style="color:#ff4d4f;">❌ 내 선택: ${w.user}</div>
             <div class="wrong-detail" style="color:#28a745;">✅ 정답: ${w.correct}</div>
             <div class="wrong-exp">💡 ${w.exp}</div>
@@ -446,10 +498,6 @@ function showHistoryDetail(session) {
         container.appendChild(div);
     });
 }
-
-// ==========================================
-// 4. 유틸리티 함수
-// ==========================================
 
 function showMainScreen() {
     showScreen(document.getElementById('start-screen'));
@@ -465,12 +513,12 @@ function downloadTxt(session) {
     let content = `[AWS SAA-C03 오답노트]\n`;
     content += `회차: ${session.round}회차 (${session.mode})\n`;
     content += `일시: ${session.date}\n`;
-    content += `점수: ${session.scoreDisplay || session.score}\n\n`; // 점수 표시 방식 개선
+    content += `점수: ${session.scoreDisplay || session.score}\n\n`;
 
     session.wrongList.forEach((w, i) => {
-        content += `[문제 ${i+1}] ${w.title}\n❌ 선택: ${w.user}\n✅ 정답: ${w.correct}\n💡 해설:\n${w.exp}\n\n================\n\n`;
+        let dummyText = w.isDummy ? " [⚠️ 채점 제외]" : "";
+        content += `[문제 ${i+1}] ${w.title}${dummyText}\n❌ 선택: ${w.user}\n✅ 정답: ${w.correct}\n💡 해설:\n${w.exp}\n\n================\n\n`;
     });
-    
     const blob = new Blob([content], { type: 'text/plain' });
     const a = document.createElement('a');
     a.href = window.URL.createObjectURL(blob);
