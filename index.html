@@ -14,8 +14,8 @@
     <h1>AWS SAA-C03 모의고사</h1>
 
     <div class="count-select">
-      <button data-count="30">30문제</button>
-      <button data-count="50" class="active">50문제</button>
+      <button data-count="30" class="active">30문제</button>
+      <button data-count="50">50문제</button>
       <button data-count="65">65문제 (실전)</button>
     </div>
 
@@ -31,8 +31,13 @@
 
   <section id="exam-screen" class="hidden card">
     <div class="exam-header">
-      <span id="progress">1 / 60</span>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <button id="exitToMainBtn" class="btn-quit" style="background:#f1f3f5; border:1px solid #ddd; color:#555; padding:6px 12px; font-size:0.9rem;">🏠 메인</button>
+        <span id="progress">1 / 65</span>
+      </div>
+
       <span id="mode-badge" class="badge">실전</span>
+
       <button id="quitBtn" class="btn-quit">중도 제출</button>
     </div>
 
@@ -56,41 +61,4 @@
 
   <section id="result-screen" class="hidden card">
     <h2>시험 결과</h2>
-    <p id="score" class="score-text"></p>
-
-    <div id="category-stats"></div>
-    
-    <h3>❌ 이번 시험 오답</h3>
-    <div id="wrong-list"></div>
-
-    <button id="restartBtn" class="primary">메인으로 돌아가기</button>
-  </section>
-
-  <section id="history-screen" class="hidden card">
-    <h2>📂 오답노트 기록</h2>
-    <div id="history-sessions"></div>
-    <div class="nav">
-      <button id="backToStartBtn" class="primary">메인으로</button>
-      <button id="clearHistoryBtn" class="danger">기록 삭제</button>
-    </div>
-  </section>
-
-  <section id="history-detail-screen" class="hidden card">
-    <div class="exam-header">
-      <h2 id="detail-title">상세 보기</h2>
-      <div style="display:flex; gap:5px;"> <button id="downloadTxtBtn" class="secondary" style="padding: 6px 12px; font-size: 0.9rem;">💾 TXT 저장</button>
-        <button id="backToHistoryBtn" class="btn-quit">목록으로</button>
-      </div>
-    </div>
-    <div id="history-detail-list"></div>
-  </section>
-
-</div>
-
-<script src="questions.js"></script>
-<script src="app.js"></script>
-</body>
-</html>
-
-
-
+    <div id="score" class="score-text"></div> <div id="
