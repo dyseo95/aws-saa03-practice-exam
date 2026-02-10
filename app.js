@@ -1,13 +1,15 @@
-console.log("App.js 로드 성공!"); alert("준비 완료!");
 let currentExamQuestions = [];
 let currentIndex = 0;
 let userAnswers = [];
 let isPracticeMode = false;
 let currentSessionData = null;
 
-// 초기화
+// ==========================================
+// 1. 초기화 및 이벤트 리스너 등록
+// ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. 문제 수 선택 버튼
+    
+    // [1] 문제 수 선택 버튼 (30, 50, 65)
     const countBtns = document.querySelectorAll('.count-select button');
     countBtns.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -16,20 +18,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 2. 메인 화면 버튼
+    // [2] 메인 화면 버튼 (시험 시작, 오답노트)
     document.getElementById('startExamBtn').addEventListener('click', () => startExam(false));
     document.getElementById('startPracticeBtn').addEventListener('click', () => startExam(true));
     document.getElementById('historyBtn').addEventListener('click', showHistoryList);
     
-    // 3. 시험 화면 버튼
+    // [3] 시험 화면 버튼 (이전, 다음, 정답확인, 제출, 메인으로)
     document.getElementById('prevBtn').addEventListener('click', goPrev);
     document.getElementById('nextBtn').addEventListener('click', goNext);
     document.getElementById('checkAnswerBtn').addEventListener('click', checkAnswer);
     document.getElementById('quitBtn').addEventListener('click', finishExam);
     
-    // 메인으로 나가기 버튼 (존재 여부 확인 후 연결)
+    // ★ 메인으로 나가기 버튼 (중요)
     const exitBtn = document.getElementById('exitToMainBtn');
-    if(exitBtn) {
+    if (exitBtn) {
         exitBtn.addEventListener('click', () => {
             if (confirm("문제 풀이를 중단하고 메인으로 돌아가시겠습니까?\n(현재 진행 상황은 저장되지 않습니다)")) {
                 showMainScreen();
@@ -37,17 +39,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 4. 결과 및 오답노트 버튼
+    // [4] 결과 화면 버튼
     document.getElementById('restartBtn').addEventListener('click', () => location.reload());
     
+    // [5] 오답노트 관련 버튼 (메인으로, 전체 삭제, 목록으로, 다운로드)
     const backStartBtn = document.getElementById('backToStartBtn');
-    if(backStartBtn) backStartBtn.addEventListener('click', showMainScreen);
+    if (backStartBtn) backStartBtn.addEventListener('click', showMainScreen);
 
     const clearHistoryBtn = document.getElementById('clearHistoryBtn');
-    if(clearHistoryBtn) clearHistoryBtn.addEventListener('click', clearAllHistory);
+    if (clearHistoryBtn) clearHistoryBtn.addEventListener('click', clearAllHistory);
 
     const backHistoryBtn = document.getElementById('backToHistoryBtn');
-    if(backHistoryBtn) backHistoryBtn.addEventListener('click', showHistoryList);
+    if (backHistoryBtn) backHistoryBtn.addEventListener('click', showHistoryList);
     
     const downloadBtn = document.getElementById('downloadTxtBtn');
     if (downloadBtn) {
@@ -57,6 +60,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+
+// ==========================================
+// 2. 시험 로직 함수들
+// ==========================================
+
 function startExam(practiceMode) {
     if (!window.questions || window.questions.length === 0) return alert("문제 데이터 오류! questions.js를 확인하세요.");
 
@@ -64,14 +72,15 @@ function startExam(practiceMode) {
     const countBtn = document.querySelector('.count-select button.active');
     const count = countBtn ? parseInt(countBtn.dataset.count) : 30;
 
+    // 문제 섞어서 추출
     currentExamQuestions = [...window.questions].sort(() => Math.random() - 0.5).slice(0, count);
     currentIndex = 0;
     userAnswers = new Array(count).fill(null);
 
     showScreen(document.getElementById('exam-screen'));
     
+    // 상단 뱃지 설정
     const badge = document.getElementById('mode-badge');
-    // 65문제(실전) 모드일 때 뱃지 표시 변경
     if (!isPracticeMode && count === 65) {
         badge.innerText = "🔥 실전 시험";
         badge.className = "badge real-badge";
@@ -85,14 +94,16 @@ function startExam(practiceMode) {
 
 function renderQuestion() {
     const q = currentExamQuestions[currentIndex];
-    const isMulti = Array.isArray(q.answer) && q.answer.length > 1;
+    const isMulti = Array.isArray(q.answer) && q.answer.length > 1; // 다중 선택 문제 여부
     
     document.getElementById('progress').innerText = `문제 ${currentIndex + 1} / ${currentExamQuestions.length}`;
     
+    // 제목에 (N개 선택) 표시
     let titleText = q.title;
     if (isMulti) titleText += ` <span style="color:#ff3b30; font-weight:bold; font-size:0.9em;">(${q.answer.length}개 선택)</span>`;
     document.getElementById('question-title').innerHTML = titleText;
 
+    // UI 초기화
     document.getElementById('practice-feedback').classList.add('hidden');
     document.getElementById('checkAnswerBtn').classList.add('hidden');
     const nextBtn = document.getElementById('nextBtn');
@@ -104,6 +115,7 @@ function renderQuestion() {
     let currentAns = userAnswers[currentIndex];
     if (isMulti && !currentAns) currentAns = [];
 
+    // 보기 출력
     q.options.forEach(opt => {
         const li = document.createElement('li');
         li.innerText = opt;
@@ -118,11 +130,14 @@ function renderQuestion() {
         optionsList.appendChild(li);
     });
 
+    // 이전 버튼 관리
     document.getElementById('prevBtn').style.visibility = currentIndex === 0 ? 'hidden' : 'visible';
     
+    // 연습모드 vs 실전모드 버튼 관리
     if (isPracticeMode) {
         const isChecked = document.querySelector('.practice-correct') || document.querySelector('.practice-wrong');
         
+        // 답을 선택했고 아직 확인 안 했으면 '정답 확인' 버튼 표시
         if ((isMulti ? currentAns.length > 0 : currentAns) && !isChecked) { 
              document.getElementById('checkAnswerBtn').classList.remove('hidden');
              nextBtn.classList.add('hidden');
@@ -138,12 +153,14 @@ function renderQuestion() {
 }
 
 function selectOption(liElement, opt, isMulti) {
+    // 연습모드에서 이미 정답 확인했으면 수정 불가
     if (isPracticeMode && !document.getElementById('practice-feedback').classList.contains('hidden')) return;
 
     if (isMulti) {
+        // 다중 선택 로직
         let ansArray = userAnswers[currentIndex] || [];
         if (ansArray.includes(opt)) {
-            ansArray = ansArray.filter(a => a !== opt);
+            ansArray = ansArray.filter(a => a !== opt); // 해제
             liElement.classList.remove('selected');
         } else {
             const q = currentExamQuestions[currentIndex];
@@ -151,11 +168,12 @@ function selectOption(liElement, opt, isMulti) {
                 alert(`최대 ${q.answer.length}개까지만 선택할 수 있습니다.`);
                 return;
             }
-            ansArray.push(opt);
+            ansArray.push(opt); // 선택
             liElement.classList.add('selected');
         }
         userAnswers[currentIndex] = ansArray;
     } else {
+        // 단일 선택 로직
         userAnswers[currentIndex] = opt;
         document.querySelectorAll('#options li').forEach(el => el.classList.remove('selected'));
         liElement.classList.add('selected');
@@ -239,6 +257,7 @@ function finishExam() {
         const isMulti = Array.isArray(q.answer);
         let isCorrect = false;
 
+        // 채점 로직
         if (isMulti) {
             if (myAns && Array.isArray(myAns)) {
                 const sortedMy = [...myAns].sort().toString();
@@ -249,6 +268,7 @@ function finishExam() {
             isCorrect = (myAns === q.answer);
         }
         
+        // 통계 및 오답 수집
         if (!stats[q.category]) stats[q.category] = { total: 0, correct: 0 };
         stats[q.category].total++;
 
@@ -273,6 +293,11 @@ function finishExam() {
     showResult(score, stats, wrongList);
 }
 
+
+// ==========================================
+// 3. 결과 및 오답노트 관리
+// ==========================================
+
 function showResult(score, stats, wrongList) {
     showScreen(document.getElementById('result-screen'));
     const total = currentExamQuestions.length;
@@ -286,9 +311,9 @@ function showResult(score, stats, wrongList) {
     scoreText.innerHTML = `총 ${total}문제 중 <strong style="color:#007aff; font-size:1.2em;">${score}문제</strong>를 맞혔습니다!<br>(점수: ${myScore}점)`;
     scoreElement.appendChild(scoreText);
 
-    // 65문제 실전 모드일 때 합격/불합격 판정
+    // ★ 65문제 실전 모드일 때 합격/불합격 판정 (72점 기준)
     if (total === 65 && !isPracticeMode) {
-        const passScore = 72; // AWS 기준 720점(72%)
+        const passScore = 72; 
         const badge = document.createElement('div');
         
         if (myScore >= passScore) {
@@ -356,6 +381,7 @@ function showHistoryList() {
         const item = document.createElement('div');
         item.className = 'session-item';
         
+        // 상세 보기 클릭
         item.onclick = (e) => {
             if (!e.target.classList.contains('btn-delete-session')) {
                 showHistoryDetail(session);
@@ -368,12 +394,13 @@ function showHistoryList() {
             </div>
             <div class="session-right">
                 <span class="session-score">${session.score}</span>
-                <button class="btn-delete-session" data-id="${session.id}" title="삭제">🗑️</button>
+                <button class="btn-delete-session" data-id="${session.id}" title="기록 삭제">🗑️</button>
             </div>
         `;
         container.appendChild(item);
     });
 
+    // 개별 삭제 버튼 이벤트
     document.querySelectorAll('.btn-delete-session').forEach(btn => {
         btn.onclick = (e) => {
             e.stopPropagation();
@@ -388,7 +415,7 @@ function deleteSession(id) {
     let sessions = JSON.parse(localStorage.getItem('aws_exam_sessions')) || [];
     sessions = sessions.filter(s => s.id !== id);
     localStorage.setItem('aws_exam_sessions', JSON.stringify(sessions));
-    showHistoryList();
+    showHistoryList(); // 목록 갱신
 }
 
 function clearAllHistory() {
@@ -419,6 +446,10 @@ function showHistoryDetail(session) {
     });
 }
 
+// ==========================================
+// 4. 유틸리티 함수
+// ==========================================
+
 function showMainScreen() {
     showScreen(document.getElementById('start-screen'));
 }
@@ -430,7 +461,7 @@ function showScreen(screen) {
 }
 
 function downloadTxt(session) {
-    let content = `[AWS SAA-C03 오답노트]\n회차: ${session.round}회차\n일시: ${session.date}\n점수: ${session.score}\n\n`;
+    let content = `[AWS SAA-C03 오답노트]\n회차: ${session.round}회차 (${session.mode})\n일시: ${session.date}\n점수: ${session.score}\n\n`;
     session.wrongList.forEach((w, i) => {
         content += `[문제 ${i+1}] ${w.title}\n❌ 선택: ${w.user}\n✅ 정답: ${w.correct}\n💡 해설:\n${w.exp}\n\n================\n\n`;
     });
@@ -440,4 +471,3 @@ function downloadTxt(session) {
     a.download = `오답노트_${session.round}회차.txt`;
     a.click();
 }
-
