@@ -61,4 +61,38 @@
 
   <section id="result-screen" class="hidden card">
     <h2>시험 결과</h2>
-    <div id="score" class="score-text"></div> <div id="
+    <div id="score" class="score-text"></div> <div id="category-stats"></div>
+    
+    <h3>❌ 이번 시험 오답</h3>
+    <div id="wrong-list"></div>
+
+    <button id="restartBtn" class="primary">메인으로 돌아가기</button>
+  </section>
+
+  <section id="history-screen" class="hidden card">
+    <h2>📂 오답노트 기록</h2>
+    <div id="history-sessions"></div>
+    <div class="nav">
+      <button id="backToStartBtn" class="primary">메인으로</button>
+      <button id="clearHistoryBtn" class="danger">전체 기록 삭제</button>
+    </div>
+  </section>
+
+  <section id="history-detail-screen" class="hidden card">
+    <div class="exam-header">
+      <h2 id="detail-title">상세 보기</h2>
+      <div style="display:flex; gap:5px;">
+        <button id="downloadTxtBtn" class="secondary" style="padding: 6px 12px; font-size: 0.9rem;">💾 TXT 저장</button>
+        <button id="backToHistoryBtn" class="btn-quit">목록으로</button>
+      </div>
+    </div>
+    <div id="history-detail-list"></div>
+  </section>
+
+</div>
+
+<script src="questions.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
