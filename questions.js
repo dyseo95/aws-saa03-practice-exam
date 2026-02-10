@@ -5423,12 +5423,15 @@ const generateQuestions = () => {
         "explanation": "필드 레벨 암호화를 사용하면 CloudFront가 공개키로 특정 필드를 암호화하며, 오직 개인키를 가진 결제 처리 서버만 이를 복호화할 수 있습니다."
     }
 // ... (위에는 문제 데이터들이 쭉 있습니다) ...
-    ];
+   // ... (위쪽에는 451개의 qList 데이터가 그대로 있어야 합니다) ...
+    
+    // ▼▼▼ 여기서부터 끝까지 이 코드로 덮어쓰세요 ▼▼▼
+    ]; 
 
-    const generateQuestions = () => {
     return qList.map((q, index) => {
         let processedAnswer = q.answer;
 
+        // ★ 핵심: 정답이 문자열이고 쉼표(,)가 있으면 배열로 변환
         if (typeof q.answer === 'string' && q.answer.includes(',')) {
             processedAnswer = q.answer
                 .split(',')
@@ -5439,12 +5442,13 @@ const generateQuestions = () => {
             id: index + 1,
             category: q.category,
             title: q.title,
-            options: [...q.options].sort(() => Math.random() - 0.5),
-            answer: processedAnswer,
+            options: [...q.options].sort(() => Math.random() - 0.5), // 보기 셔플
+            answer: processedAnswer, // 배열로 변환된 정답 적용
             explanation: q.explanation,
-            multi: Array.isArray(processedAnswer) // ⭐ UX용 플래그
+            multi: Array.isArray(processedAnswer) // ⭐ 추가하신 유용한 플래그
         };
     });
 };
 
 window.questions = generateQuestions();
+
