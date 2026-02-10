@@ -22,12 +22,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("startExamBtn")?.addEventListener("click", () => startExam(false));
     document.getElementById("startPracticeBtn")?.addEventListener("click", () => startExam(true));
+    document.getElementById("historyBtn")?.addEventListener("click", showWrongNote);
 
     document.getElementById("prevBtn")?.addEventListener("click", goPrev);
     document.getElementById("nextBtn")?.addEventListener("click", goNext);
     document.getElementById("quitBtn")?.addEventListener("click", finishExam);
 
     document.getElementById("exitToMainBtn")?.addEventListener("click", () => {
+        if (confirm("메인으로 돌아가시겠습니까?")) {
+            showScreen("start-screen");
+        }
+    });
+
+    document.getElementById("backToStartBtn")?.addEventListener("click", () => {
         showScreen("start-screen");
     });
 });
@@ -53,27 +60,28 @@ function startExam(practice) {
     shuffle(multi);
     shuffle(single);
 
-    const targetMulti = Math.min(Math.floor(count * 0.4), multi.length);
+    const multiCount = Math.min(Math.floor(count * 0.4), multi.length);
 
-    let selected = [
-        ...multi.slice(0, targetMulti),
-        ...single.slice(0, count - targetMulti)
+    currentExamQuestions = [
+        ...multi.slice(0, multiCount),
+        ...single.slice(0, count - multiCount)
     ];
 
-    if (selected.length < count) {
-        const remain = window.questions.filter(q => !selected.includes(q));
-        shuffle(remain);
-        selected = selected.concat(remain.slice(0, count - selected.length));
-    }
+    shuffle(currentExamQuestions);
 
-    shuffle(selected);
-
-    currentExamQuestions = selected;
     currentIndex = 0;
-    userAnswers = new Array(selected.length).fill(null);
+    userAnswers = new Array(currentExamQuestions.length).fill(null);
 
     showScreen("exam-screen");
     renderQuestion();
+}
+
+// ===============================
+// 유틸: 최대 선택 개수 (🔥 2개 제한)
+// ===============================
+function getMaxSelectCount(q) {
+    if (!Array.isArray(q.answer)) return 1;
+    return Math.min(q.answer.length, 2);
 }
 
 // ===============================
@@ -82,6 +90,7 @@ function startExam(practice) {
 function renderQuestion() {
     const q = currentExamQuestions[currentIndex];
     const isMulti = Array.isArray(q.answer);
+    const maxSelect = getMaxSelectCount(q);
 
     practiceChecked = false;
 
@@ -89,7 +98,7 @@ function renderQuestion() {
         `문제 ${currentIndex + 1} / ${currentExamQuestions.length}`;
 
     document.getElementById("question-title").innerHTML =
-        q.title + (isMulti ? ` <span style="color:#ff3b30">(${q.answer.length}개 선택)</span>` : "");
+        q.title + (isMulti ? ` <span style="color:red">(${maxSelect}개 선택)</span>` : "");
 
     const ul = document.getElementById("options");
     ul.innerHTML = "";
@@ -103,7 +112,7 @@ function renderQuestion() {
         if (isMulti && saved.includes(opt)) li.classList.add("selected");
         if (!isMulti && saved === opt) li.classList.add("selected");
 
-        li.onclick = () => selectOption(li, opt, isMulti);
+        li.addEventListener("click", () => selectOption(li, opt, isMulti, maxSelect));
         ul.appendChild(li);
     });
 
@@ -113,12 +122,11 @@ function renderQuestion() {
 // ===============================
 // 보기 선택
 // ===============================
-function selectOption(li, opt, isMulti) {
+function selectOption(li, opt, isMulti, limit) {
     if (isPracticeMode && practiceChecked) return;
 
     if (isMulti) {
         let arr = userAnswers[currentIndex] || [];
-        const limit = currentExamQuestions[currentIndex].answer.length;
 
         if (arr.includes(opt)) {
             arr = arr.filter(a => a !== opt);
@@ -141,39 +149,11 @@ function selectOption(li, opt, isMulti) {
 }
 
 // ===============================
-// 연습모드 정답 표시
-// ===============================
-function showPracticeAnswer() {
-    const q = currentExamQuestions[currentIndex];
-    const my = userAnswers[currentIndex];
-
-    if (!my || (Array.isArray(my) && my.length === 0)) {
-        alert("답을 선택해주세요.");
-        return false;
-    }
-
-    let correct = false;
-    if (Array.isArray(q.answer)) {
-        correct = [...my].sort().toString() === [...q.answer].sort().toString();
-    } else {
-        correct = my === q.answer;
-    }
-
-    document.getElementById("practice-feedback").classList.remove("hidden");
-    document.getElementById("feedback-msg").innerText =
-        correct ? "✅ 정답입니다!" : "❌ 틀렸습니다.";
-    document.getElementById("feedback-explanation").innerText = q.explanation;
-
-    practiceChecked = true;
-    return true;
-}
-
-// ===============================
-// 이동
+// 연습모드: 다음 누르면 자동 채점
 // ===============================
 function goNext() {
     if (isPracticeMode && !practiceChecked) {
-        if (!showPracticeAnswer()) return;
+        showPracticeAnswer();
         return;
     }
 
@@ -185,6 +165,47 @@ function goNext() {
     }
 }
 
+// ===============================
+// 연습모드 정답 표시
+// ===============================
+function showPracticeAnswer() {
+    const q = currentExamQuestions[currentIndex];
+    const my = userAnswers[currentIndex];
+    const options = document.querySelectorAll("#options li");
+
+    let correct = false;
+
+    if (Array.isArray(q.answer)) {
+        correct = my &&
+            [...my].sort().toString() === [...q.answer].slice(0, 2).sort().toString();
+    } else {
+        correct = my === q.answer;
+    }
+
+    options.forEach(li => {
+        const txt = li.innerText;
+        if (Array.isArray(q.answer) && q.answer.includes(txt)) {
+            li.classList.add("practice-correct");
+        }
+        if (my && my.includes && my.includes(txt) && !q.answer.includes(txt)) {
+            li.classList.add("practice-wrong");
+        }
+        if (!Array.isArray(q.answer) && txt === q.answer) {
+            li.classList.add("practice-correct");
+        }
+    });
+
+    document.getElementById("practice-feedback").classList.remove("hidden");
+    document.getElementById("feedback-msg").innerText =
+        correct ? "✅ 정답입니다!" : "❌ 틀렸습니다.";
+    document.getElementById("feedback-explanation").innerText = q.explanation;
+
+    practiceChecked = true;
+}
+
+// ===============================
+// 이전
+// ===============================
 function goPrev() {
     if (currentIndex > 0) {
         currentIndex--;
@@ -206,7 +227,8 @@ function finishExam() {
         let ok = false;
 
         if (Array.isArray(q.answer)) {
-            ok = my && [...my].sort().toString() === [...q.answer].sort().toString();
+            ok = my &&
+                [...my].sort().toString() === [...q.answer].slice(0, 2).sort().toString();
         } else {
             ok = my === q.answer;
         }
@@ -231,6 +253,7 @@ function finishExam() {
 // ===============================
 function showResult(correct, total) {
     showScreen("result-screen");
+
     const score = Math.round(100 + (correct / total) * 900);
     document.getElementById("score").innerText = `${score}점`;
 
@@ -240,6 +263,36 @@ function showResult(correct, total) {
     const wrong = JSON.parse(localStorage.getItem("aws_wrong_note")) || [];
     wrong.forEach(w => {
         const div = document.createElement("div");
+        div.innerHTML = `
+            <strong>❌ ${w.title}</strong><br/>
+            내 선택: ${Array.isArray(w.user) ? w.user.join(", ") : w.user}<br/>
+            정답: ${Array.isArray(w.correct) ? w.correct.join(", ") : w.correct}<br/>
+            💡 ${w.explanation}
+            <hr/>
+        `;
+        list.appendChild(div);
+    });
+}
+
+// ===============================
+// 오답노트
+// ===============================
+function showWrongNote() {
+    showScreen("history-screen");
+
+    const list = document.getElementById("history-detail-list");
+    list.innerHTML = "";
+
+    const wrong = JSON.parse(localStorage.getItem("aws_wrong_note")) || [];
+
+    if (wrong.length === 0) {
+        list.innerHTML = "<p style='text-align:center'>오답 기록이 없습니다.</p>";
+        return;
+    }
+
+    wrong.forEach(w => {
+        const div = document.createElement("div");
+        div.className = "wrong-item";
         div.innerHTML = `
             <strong>❌ ${w.title}</strong><br/>
             내 선택: ${Array.isArray(w.user) ? w.user.join(", ") : w.user}<br/>
