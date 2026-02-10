@@ -11,7 +11,7 @@ let isPracticeMode = false;
 // ===============================
 document.addEventListener("DOMContentLoaded", () => {
 
-    // 문제 수 선택 버튼
+    // 문제 수 선택
     document.querySelectorAll(".count-select button").forEach(btn => {
         btn.addEventListener("click", () => {
             document
@@ -21,29 +21,19 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // 시험 시작 (일반)
-    const startExamBtn = document.getElementById("startExamBtn");
-    if (startExamBtn) {
-        startExamBtn.addEventListener("click", () => startExam(false));
-    }
+    document.getElementById("startExamBtn")
+        ?.addEventListener("click", () => startExam(false));
 
-    // 연습 모드 (있을 경우)
-    const startPracticeBtn = document.getElementById("startPracticeBtn");
-    if (startPracticeBtn) {
-        startPracticeBtn.addEventListener("click", () => startExam(true));
-    }
+    document.getElementById("startPracticeBtn")
+        ?.addEventListener("click", () => startExam(true));
 
-    // 시험 화면 버튼
     document.getElementById("prevBtn")?.addEventListener("click", goPrev);
     document.getElementById("nextBtn")?.addEventListener("click", goNext);
     document.getElementById("checkAnswerBtn")?.addEventListener("click", checkAnswer);
     document.getElementById("quitBtn")?.addEventListener("click", finishExam);
 
-    // 메인으로
     document.getElementById("exitToMainBtn")?.addEventListener("click", () => {
-        if (confirm("메인으로 돌아가시겠습니까?")) {
-            showScreen("start-screen");
-        }
+        showScreen("start-screen");
     });
 });
 
@@ -61,22 +51,29 @@ function startExam(practice) {
     const activeBtn = document.querySelector(".count-select button.active");
     const count = activeBtn ? parseInt(activeBtn.dataset.count) : 30;
 
-    // 🔥 복수정답 비율 보장 (40%)
     const multi = window.questions.filter(q => Array.isArray(q.answer));
     const single = window.questions.filter(q => !Array.isArray(q.answer));
 
     shuffle(multi);
     shuffle(single);
 
-    const multiCount = Math.min(Math.floor(count * 0.4), multi.length);
+    const targetMulti = Math.min(Math.floor(count * 0.4), multi.length);
 
-    currentExamQuestions = [
-        ...multi.slice(0, multiCount),
-        ...single.slice(0, count - multiCount)
+    let selected = [
+        ...multi.slice(0, targetMulti),
+        ...single.slice(0, count - targetMulti)
     ];
 
-    shuffle(currentExamQuestions);
+    // 🔥 문제 수 보정 (절대 줄어들지 않게)
+    if (selected.length < count) {
+        const remain = window.questions.filter(q => !selected.includes(q));
+        shuffle(remain);
+        selected = selected.concat(remain.slice(0, count - selected.length));
+    }
 
+    shuffle(selected);
+
+    currentExamQuestions = selected;
     currentIndex = 0;
     userAnswers = new Array(currentExamQuestions.length).fill(null);
 
@@ -95,7 +92,8 @@ function renderQuestion() {
         `문제 ${currentIndex + 1} / ${currentExamQuestions.length}`;
 
     document.getElementById("question-title").innerHTML =
-        q.title + (isMulti ? " <span style='color:red'>(복수 선택)</span>" : "");
+        q.title +
+        (isMulti ? " <span style='color:#ff3b30'>(복수 선택)</span>" : "");
 
     const ul = document.getElementById("options");
     ul.innerHTML = "";
@@ -109,11 +107,18 @@ function renderQuestion() {
         if (isMulti && saved.includes(opt)) li.classList.add("selected");
         if (!isMulti && saved === opt) li.classList.add("selected");
 
-        li.addEventListener("click", () => selectOption(li, opt, isMulti));
+        li.onclick = () => selectOption(li, opt, isMulti);
         ul.appendChild(li);
     });
 
     document.getElementById("practice-feedback").classList.add("hidden");
+
+    // ⭐ 연습 모드에서만 정답 확인 버튼
+    if (isPracticeMode) {
+        document.getElementById("checkAnswerBtn").classList.remove("hidden");
+    } else {
+        document.getElementById("checkAnswerBtn").classList.add("hidden");
+    }
 }
 
 // ===============================
@@ -132,8 +137,7 @@ function selectOption(li, opt, isMulti) {
         userAnswers[currentIndex] = arr;
     } else {
         userAnswers[currentIndex] = opt;
-        document
-            .querySelectorAll("#options li")
+        document.querySelectorAll("#options li")
             .forEach(el => el.classList.remove("selected"));
         li.classList.add("selected");
     }
@@ -249,10 +253,9 @@ function showResult(correct, total) {
 // 화면 전환
 // ===============================
 function showScreen(id) {
-    document.querySelectorAll("#app section").forEach(s =>
-        s.classList.add("hidden")
-    );
-    document.getElementById(id).classList.remove("hidden");
+    document.querySelectorAll("#app section")
+        .forEach(s => s.classList.add("hidden"));
+    document.getElementById(id)?.classList.remove("hidden");
 }
 
 // ===============================
