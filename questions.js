@@ -5425,27 +5425,26 @@ const generateQuestions = () => {
 // ... (위에는 문제 데이터들이 쭉 있습니다) ...
     ];
 
+    const generateQuestions = () => {
     return qList.map((q, index) => {
-        // ★ 여기가 핵심입니다! (이 부분이 빠져있었어요)
         let processedAnswer = q.answer;
 
-        // 정답이 글자(String)인데 쉼표(,)가 포함되어 있다면 -> 배열(Array)로 변환
-        // 예: "Lambda, Macie" -> ["Lambda", "Macie"]
         if (typeof q.answer === 'string' && q.answer.includes(',')) {
-            processedAnswer = q.answer.split(',').map(a => a.trim());
+            processedAnswer = q.answer
+                .split(',')
+                .map(a => a.trim());
         }
 
         return {
             id: index + 1,
             category: q.category,
             title: q.title,
-            options: [...q.options].sort(() => Math.random() - 0.5), // 보기 셔플
-            answer: processedAnswer, // ★ 변환된 정답을 넣어야 합니다
-            explanation: q.explanation
+            options: [...q.options].sort(() => Math.random() - 0.5),
+            answer: processedAnswer,
+            explanation: q.explanation,
+            multi: Array.isArray(processedAnswer) // ⭐ UX용 플래그
         };
     });
 };
 
 window.questions = generateQuestions();
-
-
