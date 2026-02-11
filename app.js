@@ -1,207 +1,151 @@
-// ==========================================
-// 전역 상태
-// ==========================================
 let currentExamQuestions = [];
 let currentIndex = 0;
 let userAnswers = [];
 let isPracticeMode = false;
 let currentSessionData = null;
 
-// ==========================================
-// 공통 정답 판별 함수 (⭐ 핵심)
-// ==========================================
-function isAnswerCorrect(question, userAnswer) {
-    if (!userAnswer) return false;
-
-    const correct = question.answer;
-
-    // 복수 정답
-    if (Array.isArray(correct)) {
-        if (!Array.isArray(userAnswer)) return false;
-        if (userAnswer.length !== correct.length) return false;
-        return correct.every(ans => userAnswer.includes(ans));
-    }
-
-    // 단일 정답
-    return userAnswer === correct;
-}
-
-// ==========================================
 // 초기화
-// ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-
-    document.querySelectorAll('.count-select button').forEach(btn => {
+    // 문제 수 선택
+    const countBtns = document.querySelectorAll('.count-select button');
+    countBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            document.querySelectorAll('.count-select button')
-                .forEach(b => b.classList.remove('active'));
+            countBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         });
     });
 
-    document.getElementById('startExamBtn').onclick = () => startExam(false);
-    document.getElementById('startPracticeBtn').onclick = () => startExam(true);
-    document.getElementById('historyBtn').onclick = showHistoryList;
+    // 버튼 이벤트 연결
+    document.getElementById('startExamBtn').addEventListener('click', () => startExam(false));
+    document.getElementById('startPracticeBtn').addEventListener('click', () => startExam(true));
+    document.getElementById('historyBtn').addEventListener('click', showHistoryList);
+    
+    document.getElementById('prevBtn').addEventListener('click', goPrev);
+    document.getElementById('nextBtn').addEventListener('click', goNext);
+    document.getElementById('checkAnswerBtn').addEventListener('click', checkAnswer);
+    document.getElementById('quitBtn').addEventListener('click', finishExam);
+    
+    document.getElementById('exitToMainBtn').addEventListener('click', () => {
+        if(confirm("메인으로 돌아가시겠습니까?")) showMainScreen();
+    });
 
-    document.getElementById('prevBtn').onclick = goPrev;
-    document.getElementById('nextBtn').onclick = goNext;
-    document.getElementById('checkAnswerBtn').onclick = checkAnswer;
-    document.getElementById('quitBtn').onclick = finishExam;
-
-    document.getElementById('restartBtn').onclick = () => location.reload();
-
+    document.getElementById('restartBtn').addEventListener('click', () => location.reload());
+    document.getElementById('backToStartBtn').addEventListener('click', showMainScreen);
+    document.getElementById('clearHistoryBtn').addEventListener('click', clearAllHistory);
+    document.getElementById('backToHistoryBtn').addEventListener('click', showHistoryList);
+    
     const downloadBtn = document.getElementById('downloadTxtBtn');
     if (downloadBtn) {
-        downloadBtn.onclick = () => currentSessionData && downloadTxt(currentSessionData);
+        downloadBtn.addEventListener('click', () => {
+            if (currentSessionData) downloadTxt(currentSessionData);
+        });
     }
 });
 
-// ==========================================
-// 시험 시작
-// ==========================================
 function startExam(practiceMode) {
-    if (!window.questions || window.questions.length === 0) {
-        alert("문제 데이터가 없습니다.");
-        return;
-    }
+    if (!window.questions || window.questions.length === 0) return alert("문제 데이터가 없습니다.");
 
     isPracticeMode = practiceMode;
     const countBtn = document.querySelector('.count-select button.active');
-    const count = countBtn ? Number(countBtn.dataset.count) : 30;
+    const count = countBtn ? parseInt(countBtn.dataset.count) : 30;
 
-    const all = [...window.questions];
-    const multi = all.filter(q => Array.isArray(q.answer));
-    const single = all.filter(q => !Array.isArray(q.answer));
-
-    multi.sort(() => Math.random() - 0.5);
-    single.sort(() => Math.random() - 0.5);
-
-    const multiCount = Math.min(Math.floor(count * 0.4), multi.length);
-    let selected = [
-        ...multi.slice(0, multiCount),
-        ...single.slice(0, count - multiCount)
-    ];
-
-    selected.sort(() => Math.random() - 0.5);
-
-    if (!practiceMode && count === 65) {
-        const dummyIdx = selected
-            .map((_, i) => i)
-            .sort(() => Math.random() - 0.5)
-            .slice(0, 15);
-
-        selected = selected.map((q, i) => ({
-            ...q,
-            isDummy: dummyIdx.includes(i)
-        }));
-    } else {
-        selected = selected.map(q => ({ ...q, isDummy: false }));
-    }
-
-    currentExamQuestions = selected;
+    // 단순 셔플 및 자르기
+    currentExamQuestions = [...window.questions].sort(() => Math.random() - 0.5).slice(0, count);
     currentIndex = 0;
-    userAnswers = new Array(selected.length).fill(null);
+    userAnswers = new Array(count).fill(null);
 
     showScreen(document.getElementById('exam-screen'));
+    
+    const badge = document.getElementById('mode-badge');
+    badge.innerText = isPracticeMode ? "🎓 연습 모드" : "📝 실전 모드";
+    badge.className = isPracticeMode ? 'badge practice-badge' : 'badge real-badge';
+
     renderQuestion();
 }
 
-// ==========================================
-// 문제 렌더링
-// ==========================================
 function renderQuestion() {
     const q = currentExamQuestions[currentIndex];
-    const isMulti = Array.isArray(q.answer);
+    
+    document.getElementById('progress').innerText = `문제 ${currentIndex + 1} / ${currentExamQuestions.length}`;
+    document.getElementById('question-title').innerText = q.title;
 
-    document.getElementById('progress').innerText =
-        `문제 ${currentIndex + 1} / ${currentExamQuestions.length}`;
+    document.getElementById('practice-feedback').classList.add('hidden');
+    document.getElementById('checkAnswerBtn').classList.add('hidden');
+    const nextBtn = document.getElementById('nextBtn');
+    nextBtn.classList.remove('hidden');
 
-    document.getElementById('question-title').innerHTML =
-        q.title + (isMulti ? ` <span style="color:red;">(${q.answer.length}개 선택)</span>` : '');
-
-    const options = document.getElementById('options');
-    options.innerHTML = '';
-
-    const saved = userAnswers[currentIndex] || (isMulti ? [] : null);
+    const optionsList = document.getElementById('options');
+    optionsList.innerHTML = '';
 
     q.options.forEach(opt => {
         const li = document.createElement('li');
         li.innerText = opt;
-
-        if (isMulti && saved.includes(opt)) li.classList.add('selected');
-        if (!isMulti && saved === opt) li.classList.add('selected');
-
-        li.onclick = () => selectOption(li, opt, isMulti);
-        options.appendChild(li);
-    });
-
-    document.getElementById('practice-feedback').classList.add('hidden');
-    document.getElementById('checkAnswerBtn').classList.toggle('hidden', !isPracticeMode);
-}
-
-// ==========================================
-// 보기 선택
-// ==========================================
-function selectOption(li, opt, isMulti) {
-    if (isPracticeMode &&
-        !document.getElementById('practice-feedback').classList.contains('hidden')) return;
-
-    if (isMulti) {
-        let arr = userAnswers[currentIndex] || [];
-        if (arr.includes(opt)) {
-            arr = arr.filter(a => a !== opt);
-            li.classList.remove('selected');
-        } else {
-            if (arr.length >= currentExamQuestions[currentIndex].answer.length) {
-                alert("선택 개수를 초과했습니다.");
-                return;
-            }
-            arr.push(opt);
+        
+        // ★ 단일 선택 하이라이트
+        if (userAnswers[currentIndex] === opt) {
             li.classList.add('selected');
         }
-        userAnswers[currentIndex] = arr;
-    } else {
-        userAnswers[currentIndex] = opt;
-        document.querySelectorAll('#options li')
-            .forEach(el => el.classList.remove('selected'));
-        li.classList.add('selected');
-    }
-}
 
-// ==========================================
-// 정답 확인 (연습 모드)
-// ==========================================
-function checkAnswer() {
-    const q = currentExamQuestions[currentIndex];
-    const my = userAnswers[currentIndex];
-    if (!my || (Array.isArray(my) && my.length === 0)) {
-        alert("답을 선택하세요.");
-        return;
-    }
-
-    const correct = isAnswerCorrect(q, my);
-    const options = document.querySelectorAll('#options li');
-
-    options.forEach(li => {
-        const txt = li.innerText;
-        if (Array.isArray(q.answer)) {
-            if (q.answer.includes(txt)) li.classList.add('practice-correct');
-            if (my.includes(txt) && !q.answer.includes(txt)) li.classList.add('practice-wrong');
-        } else {
-            if (txt === q.answer) li.classList.add('practice-correct');
-            if (txt === my && my !== q.answer) li.classList.add('practice-wrong');
-        }
+        li.onclick = () => selectOption(li, opt);
+        optionsList.appendChild(li);
     });
 
-    document.getElementById('feedback-msg').innerHTML =
-        correct ? "✅ 정답입니다!" : "❌ 틀렸습니다.";
-    document.getElementById('feedback-explanation').innerText = q.explanation;
-    document.getElementById('practice-feedback').classList.remove('hidden');
+    document.getElementById('prevBtn').style.visibility = currentIndex === 0 ? 'hidden' : 'visible';
+    
+    if (isPracticeMode) {
+        // 이미 정답 확인을 한 상태인지 체크
+        const isChecked = document.querySelector('.practice-correct') || document.querySelector('.practice-wrong');
+        
+        if (userAnswers[currentIndex] && !isChecked) { 
+             document.getElementById('checkAnswerBtn').classList.remove('hidden');
+             nextBtn.classList.add('hidden');
+        } else if (isChecked) {
+             nextBtn.classList.remove('hidden');
+        } else {
+             document.getElementById('checkAnswerBtn').classList.remove('hidden');
+             nextBtn.classList.add('hidden');
+        }
+    } else {
+        nextBtn.innerText = (currentIndex === currentExamQuestions.length - 1) ? '최종 제출' : '다음';
+    }
 }
 
-// ==========================================
-// 이동
-// ==========================================
+function selectOption(liElement, opt) {
+    if (isPracticeMode && !document.getElementById('practice-feedback').classList.contains('hidden')) return;
+
+    // ★ 무조건 단일 선택 (기존 값 덮어쓰기)
+    userAnswers[currentIndex] = opt;
+    
+    document.querySelectorAll('#options li').forEach(el => el.classList.remove('selected'));
+    liElement.classList.add('selected');
+}
+
+function checkAnswer() {
+    const q = currentExamQuestions[currentIndex];
+    const myAns = userAnswers[currentIndex];
+
+    if (!myAns) return alert("답을 선택해주세요.");
+
+    const options = document.querySelectorAll('#options li');
+    // ★ 단순 문자열 비교
+    const isCorrect = (myAns === q.answer);
+
+    options.forEach(li => {
+        if (li.innerText === q.answer) li.classList.add('practice-correct');
+        if (li.innerText === myAns && !isCorrect) li.classList.add('practice-wrong');
+    });
+
+    const msgBox = document.getElementById('feedback-msg');
+    const expBox = document.getElementById('feedback-explanation');
+    
+    msgBox.innerHTML = isCorrect ? "<span class='msg-correct'>✅ 정답입니다!</span>" : "<span class='msg-wrong'>❌ 틀렸습니다.</span>";
+    expBox.innerText = q.explanation;
+    
+    document.getElementById('practice-feedback').classList.remove('hidden');
+    document.getElementById('checkAnswerBtn').classList.add('hidden');
+    document.getElementById('nextBtn').classList.remove('hidden');
+}
+
 function goNext() {
     if (currentIndex < currentExamQuestions.length - 1) {
         currentIndex++;
@@ -218,59 +162,159 @@ function goPrev() {
     }
 }
 
-// ==========================================
-// 시험 종료 및 채점
-// ==========================================
 function finishExam() {
-    if (!confirm("시험을 종료하시겠습니까?")) return;
+    if (!confirm("결과를 확인하시겠습니까?")) return;
 
-    let correct = 0;
-    let validCorrect = 0;
-    let validTotal = 0;
-    const wrongList = {};
+    let score = 0;
     const stats = {};
+    const wrongList = [];
 
-    currentExamQuestions.forEach((q, i) => {
-        const ok = isAnswerCorrect(q, userAnswers[i]);
-
+    currentExamQuestions.forEach((q, idx) => {
+        const myAns = userAnswers[idx];
+        // ★ 단순 문자열 비교
+        const isCorrect = (myAns === q.answer);
+        
         if (!stats[q.category]) stats[q.category] = { total: 0, correct: 0 };
         stats[q.category].total++;
 
-        if (!q.isDummy) validTotal++;
-
-        if (ok) {
-            correct++;
+        if (isCorrect) {
+            score++;
             stats[q.category].correct++;
-            if (!q.isDummy) validCorrect++;
+        } else {
+            wrongList.push({
+                title: q.title,
+                category: q.category,
+                user: myAns || "미선택",
+                correct: q.answer,
+                exp: q.explanation
+            });
         }
     });
 
-    const score = Math.round(100 + (validCorrect / validTotal) * 900);
-    showResult(score, correct, currentExamQuestions.length, stats);
+    saveSession(score, currentExamQuestions.length, wrongList);
+    showResult(score, currentExamQuestions.length, stats, wrongList);
 }
 
-// ==========================================
-// 결과 화면
-// ==========================================
-function showResult(score, correct, total, stats) {
+function showResult(score, total, stats, wrongList) {
     showScreen(document.getElementById('result-screen'));
-    document.getElementById('score').innerHTML =
-        `<div style="font-size:3rem;font-weight:800;">${score}점</div>
-         <div>${total}문제 중 ${correct}문제 정답</div>`;
+    
+    // ★ 단순 점수 표시
+    document.getElementById('score').innerHTML = `
+        <div style="font-size:2rem; font-weight:bold; color:#007aff;">${score}점</div>
+        <div>(총 ${total}문제 중 ${score}개 정답)</div>
+    `;
 
-    const statBox = document.getElementById('category-stats');
-    statBox.innerHTML = '';
-    for (const c in stats) {
-        const r = Math.round((stats[c].correct / stats[c].total) * 100);
-        statBox.innerHTML += `<div>${c} : ${r}%</div>`;
+    const statDiv = document.getElementById('category-stats');
+    statDiv.innerHTML = '<h4>📊 정답률</h4>';
+    for (const cat in stats) {
+        const rate = Math.round((stats[cat].correct / stats[cat].total) * 100);
+        statDiv.innerHTML += `<div class="stat-item"><span>${cat}</span> <strong>${rate}%</strong></div>`;
+    }
+
+    const wrongDiv = document.getElementById('wrong-list');
+    wrongDiv.innerHTML = '';
+    if (wrongList.length === 0) {
+        wrongDiv.innerHTML = '<p style="text-align:center;">🎉 완벽합니다!</p>';
+    } else {
+        wrongList.forEach(w => {
+            const div = document.createElement('div');
+            div.className = 'wrong-item';
+            div.innerHTML = `
+                <div class="wrong-title">[${w.category}] ${w.title}</div>
+                <div class="wrong-detail" style="color:#ff4d4f;">❌ 내 선택: ${w.user}</div>
+                <div class="wrong-detail" style="color:#28a745;">✅ 정답: ${w.correct}</div>
+                <div class="wrong-exp">💡 ${w.exp}</div>
+            `;
+            wrongDiv.appendChild(div);
+        });
     }
 }
 
-// ==========================================
-// 화면 전환
-// ==========================================
+function saveSession(score, total, wrongList) {
+    const sessions = JSON.parse(localStorage.getItem('aws_exam_sessions')) || [];
+    const newSession = {
+        id: Date.now(),
+        round: sessions.length + 1,
+        mode: isPracticeMode ? '연습' : '실전',
+        date: new Date().toLocaleString(),
+        score: `${score} / ${total}`,
+        wrongList: wrongList
+    };
+    sessions.unshift(newSession);
+    localStorage.setItem('aws_exam_sessions', JSON.stringify(sessions));
+}
+
+function showHistoryList() {
+    showScreen(document.getElementById('history-screen'));
+    const sessions = JSON.parse(localStorage.getItem('aws_exam_sessions')) || [];
+    const container = document.getElementById('history-sessions');
+    container.innerHTML = '';
+
+    if (sessions.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#666;">기록이 없습니다.</p>';
+        return;
+    }
+
+    sessions.forEach(session => {
+        const item = document.createElement('div');
+        item.className = 'session-item';
+        item.innerHTML = `
+            <div class="session-info">
+                <span class="session-title">${session.round}회차 (${session.date})</span>
+            </div>
+            <span class="session-score">${session.score}</span>
+        `;
+        item.onclick = () => showHistoryDetail(session);
+        container.appendChild(item);
+    });
+}
+
+function clearAllHistory() {
+    if(confirm('모든 기록을 삭제하시겠습니까?')) {
+        localStorage.removeItem('aws_exam_sessions');
+        showHistoryList();
+    }
+}
+
+function showHistoryDetail(session) {
+    currentSessionData = session;
+    showScreen(document.getElementById('history-detail-screen'));
+    document.getElementById('detail-title').innerText = `${session.round}회차 오답 노트`;
+    
+    const container = document.getElementById('history-detail-list');
+    container.innerHTML = '';
+    
+    session.wrongList.forEach(w => {
+        const div = document.createElement('div');
+        div.className = 'wrong-item';
+        div.innerHTML = `
+            <div class="wrong-title">[${w.category}] ${w.title}</div>
+            <div class="wrong-detail" style="color:#ff4d4f;">❌ 내 선택: ${w.user}</div>
+            <div class="wrong-detail" style="color:#28a745;">✅ 정답: ${w.correct}</div>
+            <div class="wrong-exp">💡 ${w.exp}</div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function showMainScreen() {
+    showScreen(document.getElementById('start-screen'));
+}
+
 function showScreen(screen) {
-    document.querySelectorAll('#app > section')
-        .forEach(s => s.classList.add('hidden'));
+    const screens = document.querySelectorAll('#app > section');
+    screens.forEach(s => s.classList.add('hidden'));
     screen.classList.remove('hidden');
+}
+
+function downloadTxt(session) {
+    let content = `[오답노트] ${session.round}회차\n점수: ${session.score}\n\n`;
+    session.wrongList.forEach((w, i) => {
+        content += `[문제 ${i+1}] ${w.title}\n❌ 선택: ${w.user}\n✅ 정답: ${w.correct}\n💡 해설:\n${w.exp}\n\n================\n\n`;
+    });
+    const blob = new Blob([content], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = window.URL.createObjectURL(blob);
+    a.download = `오답노트_${session.round}회차.txt`;
+    a.click();
 }
